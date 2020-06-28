@@ -22,6 +22,7 @@ tasks = []
 
 def schedule_on_cold_boot(moduleName, functionName):
     if not machine.wake_reason() is machine.DEEPSLEEP_RESET:
+        print("on_cold_boot")
         module = __import__(moduleName)
         func = getattr(module, functionName)
         func()
