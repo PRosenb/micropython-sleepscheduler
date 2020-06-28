@@ -4,10 +4,10 @@ import utime
 
 
 class Task:
-    def __init__(self, moduleName, functionName, scheduledTicksMs):
+    def __init__(self, moduleName, functionName, secondsSinceEpoch):
         self.moduleName = moduleName
         self.functionName = functionName
-        self.scheduledTicksMs = scheduledTicksMs
+        self.secondsSinceEpoch = secondsSinceEpoch
 
     def __str__(self):
         return self.__dict__
@@ -20,18 +20,24 @@ def obj_to_dict(obj):
 tasks = []
 
 
-def schedule_delayed_ms(moduleName, functionName, delayMs):
-    scheduledTicksMs = utime.ticks_add(utime.ticks_ms(), delayMs)
-    newTask = Task(moduleName, functionName, scheduledTicksMs)
+def schedule_on_cold_boot(moduleName, functionName):
+    if not machine.wake_reason() is machine.DEEPSLEEP_RESET:
+        module = __import__(moduleName)
+        func = getattr(module, functionName)
+        func()
+
+
+def schedule_at_sec(moduleName, functionName, secondsSinceEpoch):
+    newTask = Task(moduleName, functionName, secondsSinceEpoch)
     inserted = False
     for i in range(len(tasks)):
         task = tasks[i]
-        if (task.scheduledTicksMs > scheduledTicksMs):
+        if (task.secondsSinceEpoch > secondsSinceEpoch):
             tasks.insert(i, newTask)
             inserted = True
             break
     if not inserted:
-        tasks.append(Task(moduleName, functionName, scheduledTicksMs))
+        tasks.append(Task(moduleName, functionName, secondsSinceEpoch))
 
 
 def store():
@@ -56,7 +62,7 @@ def restore_from_rtc_memory():
                 Task(
                     task_dict["moduleName"],
                     task_dict["functionName"],
-                    task_dict["scheduledTicksMs"]
+                    task_dict["secondsSinceEpoch"]
                 )
             )
 
@@ -64,7 +70,7 @@ def restore_from_rtc_memory():
 def print_tasks():
     for task in tasks:
         print(task.moduleName + "." + task.functionName +
-              ": " + str(task.scheduledTicksMs))
+              ": " + str(task.secondsSinceEpoch))
 
 
 def sleep():
@@ -90,12 +96,11 @@ def run_forever():
     while True:
         if tasks:
             first_task = tasks[0]
-            timeUntilFirstTaskMs = utime.ticks_diff(
-                first_task.scheduledTicksMs, utime.ticks_ms())
-            if timeUntilFirstTaskMs <= 0:
+            timeUntilFirstTask = first_task.secondsSinceEpoch - utime.time()
+            if timeUntilFirstTask <= 0:
                 execute_first_task()
             else:
-                utime.sleep_ms(timeUntilFirstTaskMs)
+                utime.sleep_ms(timeUntilFirstTask)
         else:
             break
 
