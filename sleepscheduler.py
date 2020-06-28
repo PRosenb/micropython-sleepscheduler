@@ -50,22 +50,21 @@ def schedule_at_sec(moduleName, functionName, secondsSinceEpoch, repeatAfterSec=
 
 def store():
     mappedTasks = list(map(obj_to_dict, _tasks))
-    state = ujson.dumps(mappedTasks)
+    tasks_json = ujson.dumps(mappedTasks)
 
-    print("state: {}".format(state))
+    print("tasks_json: {}".format(tasks_json))
     rtc = machine.RTC()
-    rtc.memory(bytes(state, 'utf-8'))
+    rtc.memory(bytes(tasks_json, 'utf-8'))
 
 
 def restore_from_rtc_memory():
     print("sleepscheduler: restore from rtc memory")
     rtc = machine.RTC()
-    state = str(rtc.memory(), 'utf-8')
-    if state:
-        print("state: {}".format(state))
-        parsed = ujson.loads(state)
-        for task_dict in parsed:
-            print(task_dict["functionName"])
+    tasks_json = str(rtc.memory(), 'utf-8')
+    if tasks_json:
+        print("tasks_json: {}".format(tasks_json))
+        parsed_tasks = ujson.loads(tasks_json)
+        for task_dict in parsed_tasks:
             _tasks.append(
                 Task(
                     task_dict["moduleName"],

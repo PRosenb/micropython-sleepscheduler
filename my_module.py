@@ -4,6 +4,7 @@ import utime
 
 def init_on_cold_boot():
     sl.schedule_at_sec("my_module", "scheduled_recurrently", 0, 10)
+    # sl.allow_deep_sleep = False
 
 
 def scheduled_recurrently():
