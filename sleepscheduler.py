@@ -18,6 +18,9 @@ def obj_to_dict(obj):
     return obj.__dict__
 
 
+initial_deep_sleep_delay_sec = 20
+allow_deep_sleep = True
+_start_seconds_since_epoch = utime.time()
 _tasks = []
 
 
@@ -27,6 +30,8 @@ def schedule_on_cold_boot(moduleName, functionName):
         module = __import__(moduleName)
         func = getattr(module, functionName)
         func()
+        # set _start_seconds_since_epoch in case func() set the time
+        _start_seconds_since_epoch = utime.time()
 
 
 def schedule_at_sec(moduleName, functionName, secondsSinceEpoch, repeatAfterSec=0):
@@ -77,11 +82,10 @@ def print_tasks():
               ": " + str(task.secondsSinceEpoch))
 
 
-def sleep():
+def deep_sleep_sec(durationSec):
     store()
-    durationSeconds = 3
-    print("sleepscheduler: sleep for {} seconds".format(durationSeconds))
-    machine.deepsleep(durationSeconds * 1000)
+    print("sleepscheduler: deepSleep for {} seconds".format(durationSec))
+    machine.deepsleep(durationSec * 1000)
 
 
 def execute_first_task():
@@ -111,7 +115,17 @@ def run_forever():
                         first_task.repeatAfterSec
                     )
             else:
-                utime.sleep_ms(timeUntilFirstTask)
+                if (
+                    allow_deep_sleep
+                    # only delay deepSleep on cold boot
+                    and (machine.wake_reason() == machine.DEEPSLEEP_RESET
+                         or utime.time() > _start_seconds_since_epoch + initial_deep_sleep_delay_sec)
+                    and timeUntilFirstTask > 1
+                ):
+                    deep_sleep_sec(timeUntilFirstTask - 1)
+                else:
+                    print("sleep({})".format(timeUntilFirstTask))
+                    utime.sleep(timeUntilFirstTask)
         else:
             break
 
