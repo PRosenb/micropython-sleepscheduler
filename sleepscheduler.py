@@ -4,10 +4,11 @@ import utime
 
 
 class Task:
-    def __init__(self, moduleName, functionName, secondsSinceEpoch):
+    def __init__(self, moduleName, functionName, secondsSinceEpoch, repeatAfterSec):
         self.moduleName = moduleName
         self.functionName = functionName
         self.secondsSinceEpoch = secondsSinceEpoch
+        self.repeatAfterSec = repeatAfterSec
 
     def __str__(self):
         return self.__dict__
@@ -28,8 +29,8 @@ def schedule_on_cold_boot(moduleName, functionName):
         func()
 
 
-def schedule_at_sec(moduleName, functionName, secondsSinceEpoch):
-    newTask = Task(moduleName, functionName, secondsSinceEpoch)
+def schedule_at_sec(moduleName, functionName, secondsSinceEpoch, repeatAfterSec=0):
+    newTask = Task(moduleName, functionName, secondsSinceEpoch, repeatAfterSec)
     inserted = False
     for i in range(len(tasks)):
         task = tasks[i]
@@ -38,7 +39,8 @@ def schedule_at_sec(moduleName, functionName, secondsSinceEpoch):
             inserted = True
             break
     if not inserted:
-        tasks.append(Task(moduleName, functionName, secondsSinceEpoch))
+        tasks.append(Task(moduleName, functionName,
+                          secondsSinceEpoch, repeatAfterSec))
 
 
 def store():
@@ -63,7 +65,8 @@ def restore_from_rtc_memory():
                 Task(
                     task_dict["moduleName"],
                     task_dict["functionName"],
-                    task_dict["secondsSinceEpoch"]
+                    task_dict["secondsSinceEpoch"],
+                    task_dict["repeatAfterSec"]
                 )
             )
 
@@ -100,6 +103,13 @@ def run_forever():
             timeUntilFirstTask = first_task.secondsSinceEpoch - utime.time()
             if timeUntilFirstTask <= 0:
                 execute_first_task()
+                if first_task.repeatAfterSec != 0:
+                    schedule_at_sec(
+                        first_task.moduleName,
+                        first_task.functionName,
+                        first_task.secondsSinceEpoch + first_task.repeatAfterSec,
+                        first_task.repeatAfterSec
+                    )
             else:
                 utime.sleep_ms(timeUntilFirstTask)
         else:
