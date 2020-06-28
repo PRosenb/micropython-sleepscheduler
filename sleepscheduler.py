@@ -1,11 +1,13 @@
 import machine
 import ujson
+import utime
 
 
 class Task:
-    def __init__(self, scheduledUptimeMillis, functionName):
-        self.scheduledUptimeMillis = scheduledUptimeMillis
+    def __init__(self, moduleName, functionName, scheduledTicksMs):
+        self.moduleName = moduleName
         self.functionName = functionName
+        self.scheduledTicksMs = scheduledTicksMs
 
     def __str__(self):
         return self.__dict__
@@ -18,14 +20,21 @@ def obj_to_dict(obj):
 tasks = []
 
 
-def add_task(functionName):
-    tasks.append(Task(1, functionName))
+def schedule_delayed_ms(moduleName, functionName, delayMs):
+    scheduledTicksMs = utime.ticks_add(utime.ticks_ms(), delayMs)
+    newTask = Task(moduleName, functionName, scheduledTicksMs)
+    inserted = False
+    for i in range(len(tasks)):
+        task = tasks[i]
+        if (task.scheduledTicksMs > scheduledTicksMs):
+            tasks.insert(i, newTask)
+            inserted = True
+            break
+    if not inserted:
+        tasks.append(Task(moduleName, functionName, scheduledTicksMs))
 
 
 def store():
-    # task = Task(0, "func0()")
-    # tasks.append(task)
-    # tasks.append(Task(1, "func1()"))
     mappedTasks = list(map(obj_to_dict, tasks))
     state = ujson.dumps(mappedTasks)
 
@@ -44,9 +53,18 @@ def restore_from_rtc_memory():
         for task_dict in parsed:
             print(task_dict["functionName"])
             tasks.append(
-                Task(task_dict["scheduledUptimeMillis"],
-                     task_dict["functionName"])
+                Task(
+                    task_dict["moduleName"],
+                    task_dict["functionName"],
+                    task_dict["scheduledTicksMs"]
+                )
             )
+
+
+def print_tasks():
+    for task in tasks:
+        print(task.moduleName + "." + task.functionName +
+              ": " + str(task.scheduledTicksMs))
 
 
 def sleep():
@@ -56,8 +74,30 @@ def sleep():
     machine.deepsleep(durationSeconds * 1000)
 
 
-def execute():
-    print("execute")
+def execute_first_task():
+    task = tasks.pop(0)
+    execute_task(task)
+
+
+def execute_task(task):
+    module = __import__(task.moduleName)
+    func = getattr(module, task.functionName)
+    func()
+
+
+def run_forever():
+    print("run_forever()")
+    while True:
+        if tasks:
+            first_task = tasks[0]
+            timeUntilFirstTaskMs = utime.ticks_diff(
+                first_task.scheduledTicksMs, utime.ticks_ms())
+            if timeUntilFirstTaskMs <= 0:
+                execute_first_task()
+            else:
+                utime.sleep_ms(timeUntilFirstTaskMs)
+        else:
+            break
 
 
 restore_from_rtc_memory()
