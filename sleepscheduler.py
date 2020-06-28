@@ -18,7 +18,7 @@ def obj_to_dict(obj):
     return obj.__dict__
 
 
-tasks = []
+_tasks = []
 
 
 def schedule_on_cold_boot(moduleName, functionName):
@@ -32,19 +32,19 @@ def schedule_on_cold_boot(moduleName, functionName):
 def schedule_at_sec(moduleName, functionName, secondsSinceEpoch, repeatAfterSec=0):
     newTask = Task(moduleName, functionName, secondsSinceEpoch, repeatAfterSec)
     inserted = False
-    for i in range(len(tasks)):
-        task = tasks[i]
+    for i in range(len(_tasks)):
+        task = _tasks[i]
         if (task.secondsSinceEpoch > secondsSinceEpoch):
-            tasks.insert(i, newTask)
+            _tasks.insert(i, newTask)
             inserted = True
             break
     if not inserted:
-        tasks.append(Task(moduleName, functionName,
-                          secondsSinceEpoch, repeatAfterSec))
+        _tasks.append(Task(moduleName, functionName,
+                           secondsSinceEpoch, repeatAfterSec))
 
 
 def store():
-    mappedTasks = list(map(obj_to_dict, tasks))
+    mappedTasks = list(map(obj_to_dict, _tasks))
     state = ujson.dumps(mappedTasks)
 
     print("state: {}".format(state))
@@ -61,7 +61,7 @@ def restore_from_rtc_memory():
         parsed = ujson.loads(state)
         for task_dict in parsed:
             print(task_dict["functionName"])
-            tasks.append(
+            _tasks.append(
                 Task(
                     task_dict["moduleName"],
                     task_dict["functionName"],
@@ -72,7 +72,7 @@ def restore_from_rtc_memory():
 
 
 def print_tasks():
-    for task in tasks:
+    for task in _tasks:
         print(task.moduleName + "." + task.functionName +
               ": " + str(task.secondsSinceEpoch))
 
@@ -85,7 +85,7 @@ def sleep():
 
 
 def execute_first_task():
-    task = tasks.pop(0)
+    task = _tasks.pop(0)
     execute_task(task)
 
 
@@ -98,8 +98,8 @@ def execute_task(task):
 def run_forever():
     print("run_forever()")
     while True:
-        if tasks:
-            first_task = tasks[0]
+        if _tasks:
+            first_task = _tasks[0]
             timeUntilFirstTask = first_task.secondsSinceEpoch - utime.time()
             if timeUntilFirstTask <= 0:
                 execute_first_task()
