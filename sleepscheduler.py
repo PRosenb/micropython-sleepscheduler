@@ -115,25 +115,24 @@ def run_forever():
                         first_task.repeatAfterSec
                     )
             else:
-                if (
-                    allow_deep_sleep
-                    # only delay deepSleep on cold boot
-                    and (machine.wake_reason() == machine.DEEPSLEEP_RESET
-                         or utime.time() >= _start_seconds_since_epoch + initial_deep_sleep_delay_sec)
-                    and timeUntilFirstTask > 1
-                ):
-                    deep_sleep_sec(timeUntilFirstTask - 1)
+                if allow_deep_sleep and timeUntilFirstTask > 1:
+                    if (not machine.wake_reason() == machine.DEEPSLEEP_RESET
+                         and utime.time() < _start_seconds_since_epoch + initial_deep_sleep_delay_sec):
+                         # initial deep sleep delay
+                        remaining_no_deep_sleep_sec = (_start_seconds_since_epoch + initial_deep_sleep_delay_sec) - utime.time()
+                        if (timeUntilFirstTask - 1 > remaining_no_deep_sleep_sec):
+                            # deep sleep prevention on cold boot
+                            print("sleep({}) due to cold boot".format(remaining_no_deep_sleep_sec))
+                            utime.sleep(remaining_no_deep_sleep_sec)
+                        else:
+                            print("sleep({}) due to cold boot".format(timeUntilFirstTask - 1))
+                            utime.sleep(timeUntilFirstTask - 1)
+                    else:
+                        deep_sleep_sec(timeUntilFirstTask - 1)
                 else:
                     if timeUntilFirstTask > 1:
-                        initial_no_deep_sleep_sec = (_start_seconds_since_epoch + initial_deep_sleep_delay_sec) - utime.time()
-                        if (initial_no_deep_sleep_sec > 0
-                                and timeUntilFirstTask - 1 > initial_no_deep_sleep_sec):
-                            # deep sleep prevention on cold boot
-                            print("sleep({}) due to cold boot".format(initial_no_deep_sleep_sec))
-                            utime.sleep(initial_no_deep_sleep_sec)
-                        else:
-                            print("sleep({})".format(timeUntilFirstTask - 1))
-                            utime.sleep(timeUntilFirstTask - 1)
+                        print("sleep({})".format(timeUntilFirstTask - 1))
+                        utime.sleep(timeUntilFirstTask - 1)
                     else:
                         first_task_secondsSinceEpoch = first_task.secondsSinceEpoch
                         while first_task_secondsSinceEpoch - utime.time() > 0:
