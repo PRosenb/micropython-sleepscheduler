@@ -26,8 +26,9 @@ def init_on_cold_boot():
     first_schedule_time = list(utime.localtime())
     # the time will be in the past so the function is scheduled immeditelly
     # and then again after repeatAfterSec from the time it was supposed to be scheduled (seconds 0)
-    first_schedule_time[5] = 0 # seconds
-    sl.schedule_at_sec("my_module", "scheduled_recurrently", utime.mktime(first_schedule_time), 60)
+    first_schedule_time[5] = 0  # seconds
+    sl.schedule_at_sec("my_module", "scheduled_recurrently",
+                       utime.mktime(first_schedule_time), 60)
 
 
 def scheduled_recurrently():
