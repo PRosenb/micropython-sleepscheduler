@@ -4,11 +4,11 @@ import utime
 
 
 class Task:
-    def __init__(self, moduleName, functionName, secondsSinceEpoch, repeatAfterSec):
-        self.moduleName = moduleName
-        self.functionName = functionName
-        self.secondsSinceEpoch = secondsSinceEpoch
-        self.repeatAfterSec = repeatAfterSec
+    def __init__(self, module_name, function_name, seconds_since_epoch, repeat_after_sec):
+        self.module_name = module_name
+        self.function_name = function_name
+        self.seconds_since_epoch = seconds_since_epoch
+        self.repeat_after_sec = repeat_after_sec
 
     def __str__(self):
         return self.__dict__
@@ -24,29 +24,29 @@ _start_seconds_since_epoch = utime.time()
 _tasks = []
 
 
-def schedule_on_cold_boot(moduleName, functionName):
+def schedule_on_cold_boot(module_name, function_name):
     global _start_seconds_since_epoch
     if not machine.wake_reason() is machine.DEEPSLEEP_RESET:
         print("on_cold_boot")
-        module = __import__(moduleName)
-        func = getattr(module, functionName)
+        module = __import__(module_name)
+        func = getattr(module, function_name)
         func()
         # set _start_seconds_since_epoch in case func() set the time
         _start_seconds_since_epoch = utime.time()
 
 
-def schedule_at_sec(moduleName, functionName, secondsSinceEpoch, repeatAfterSec=0):
-    newTask = Task(moduleName, functionName, secondsSinceEpoch, repeatAfterSec)
+def schedule_at_sec(module_name, function_name, seconds_since_epoch, repeat_after_sec=0):
+    newTask = Task(module_name, function_name, seconds_since_epoch, repeat_after_sec)
     inserted = False
     for i in range(len(_tasks)):
         task = _tasks[i]
-        if (task.secondsSinceEpoch > secondsSinceEpoch):
+        if (task.seconds_since_epoch > seconds_since_epoch):
             _tasks.insert(i, newTask)
             inserted = True
             break
     if not inserted:
-        _tasks.append(Task(moduleName, functionName,
-                           secondsSinceEpoch, repeatAfterSec))
+        _tasks.append(Task(module_name, function_name,
+                           seconds_since_epoch, repeat_after_sec))
 
 
 def store():
@@ -68,18 +68,18 @@ def restore_from_rtc_memory():
         for task_dict in parsed_tasks:
             _tasks.append(
                 Task(
-                    task_dict["moduleName"],
-                    task_dict["functionName"],
-                    task_dict["secondsSinceEpoch"],
-                    task_dict["repeatAfterSec"]
+                    task_dict["module_name"],
+                    task_dict["function_name"],
+                    task_dict["seconds_since_epoch"],
+                    task_dict["repeat_after_sec"]
                 )
             )
 
 
 def print_tasks():
     for task in _tasks:
-        print(task.moduleName + "." + task.functionName +
-              ": " + str(task.secondsSinceEpoch))
+        print(task.module_name + "." + task.function_name +
+              ": " + str(task.seconds_since_epoch))
 
 
 def deep_sleep_sec(durationSec):
@@ -94,8 +94,8 @@ def execute_first_task():
 
 
 def execute_task(task):
-    module = __import__(task.moduleName)
-    func = getattr(module, task.functionName)
+    module = __import__(task.module_name)
+    func = getattr(module, task.function_name)
     func()
 
 
@@ -104,15 +104,15 @@ def run_forever():
     while True:
         if _tasks:
             first_task = _tasks[0]
-            time_until_first_task = first_task.secondsSinceEpoch - utime.time()
+            time_until_first_task = first_task.seconds_since_epoch - utime.time()
             if time_until_first_task <= 0:
                 execute_first_task()
-                if first_task.repeatAfterSec != 0:
+                if first_task.repeat_after_sec != 0:
                     schedule_at_sec(
-                        first_task.moduleName,
-                        first_task.functionName,
-                        first_task.secondsSinceEpoch + first_task.repeatAfterSec,
-                        first_task.repeatAfterSec
+                        first_task.module_name,
+                        first_task.function_name,
+                        first_task.seconds_since_epoch + first_task.repeat_after_sec,
+                        first_task.repeat_after_sec
                     )
             else:
                 if allow_deep_sleep and time_until_first_task > 1:
@@ -134,8 +134,8 @@ def run_forever():
                         print("sleep({})".format(time_until_first_task - 1))
                         utime.sleep(time_until_first_task - 1)
                     else:
-                        first_task_secondsSinceEpoch = first_task.secondsSinceEpoch
-                        while first_task_secondsSinceEpoch - utime.time() > 0:
+                        first_task_seconds_since_epoch = first_task.seconds_since_epoch
+                        while first_task_seconds_since_epoch - utime.time() > 0:
                             utime.sleep_ms(1)
         else:
             break
