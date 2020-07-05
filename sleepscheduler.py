@@ -1,5 +1,4 @@
 import machine
-import ujson
 import utime
 
 
@@ -14,16 +13,74 @@ class Task:
         return self.__dict__
 
 
-def obj_to_dict(obj):
-    return obj.__dict__
-
-
 initial_deep_sleep_delay_sec = 20
 allow_deep_sleep = True
 _start_seconds_since_epoch = utime.time()
 _tasks = []
 
 
+# -------------------------------------------------------------------------------------------------
+# Encoding/Decoding
+# -------------------------------------------------------------------------------------------------
+def encode_task(task):
+    bytes = task.module_name.encode() + "\0" + task.function_name.encode() + "\0" + \
+        task.seconds_since_epoch.to_bytes(
+            4, 'big') + task.repeat_after_sec.to_bytes(4, 'big')
+    return bytes
+
+
+def decode_task(bytes, start_index, tasks):
+    for i in range(start_index, len(bytes)):
+        if bytes[i] == 0:
+            module_name = bytes[start_index:i].decode()
+            end_index = i + 1  # +1 for \0
+            break
+
+    start_index = end_index
+    for i in range(start_index, len(bytes)):
+        if bytes[i] == 0:
+            function_name = bytes[start_index:i].decode()
+            end_index = i + 1  # +1 for \0
+            break
+
+    start_index = end_index
+    end_index = start_index + 4
+    seconds_since_epoch = int.from_bytes(bytes[start_index:end_index], 'big')
+
+    start_index = end_index
+    end_index = start_index + 4
+    repeat_after_sec = int.from_bytes(bytes[start_index:end_index], 'big')
+
+    task = Task(module_name, function_name,
+                seconds_since_epoch, repeat_after_sec)
+    tasks.append(task)
+    return end_index
+
+
+def encode_tasks():
+    bytes = len(_tasks).to_bytes(4, 'big')
+    for task in _tasks:
+        task_bytes = encode_task(task)
+        bytes = bytes + task_bytes
+    print(bytes)
+    return bytes
+
+
+def decode_tasks(bytes):
+    task_count = int.from_bytes(bytes[0:4], 'big')
+
+    tasks = list()
+    start_index = 4
+    for _ in range(0, task_count):
+        start_index = decode_task(bytes, start_index, tasks)
+
+    global _tasks
+    _tasks = tasks
+
+
+# -------------------------------------------------------------------------------------------------
+# Public functions
+# -------------------------------------------------------------------------------------------------
 def schedule_on_cold_boot(module_name, function_name):
     global _start_seconds_since_epoch
     if not machine.wake_reason() is machine.DEEPSLEEP_RESET:
@@ -50,37 +107,26 @@ def schedule_at_sec(module_name, function_name, seconds_since_epoch, repeat_afte
                            seconds_since_epoch, repeat_after_sec))
 
 
+# -------------------------------------------------------------------------------------------------
+# Store/Restore to/from RTC-Memory
+# -------------------------------------------------------------------------------------------------
 def store():
-    mappedTasks = list(map(obj_to_dict, _tasks))
-    tasks_json = ujson.dumps(mappedTasks)
-
-    print("tasks_json: {}".format(tasks_json))
+    bytes = encode_tasks()
     rtc = machine.RTC()
-    rtc.memory(bytes(tasks_json, 'utf-8'))
+    rtc.memory(bytes)
 
 
 def restore_from_rtc_memory():
     print("sleepscheduler: restore from rtc memory")
     rtc = machine.RTC()
-    tasks_json = str(rtc.memory(), 'utf-8')
-    if tasks_json:
-        print("tasks_json: {}".format(tasks_json))
-        parsed_tasks = ujson.loads(tasks_json)
-        for task_dict in parsed_tasks:
-            _tasks.append(
-                Task(
-                    task_dict["module_name"],
-                    task_dict["function_name"],
-                    task_dict["seconds_since_epoch"],
-                    task_dict["repeat_after_sec"]
-                )
-            )
+    bytes = rtc.memory()
+    decode_tasks(bytes)
 
 
 def print_tasks():
     for task in _tasks:
-        print(task.module_name + "." + task.function_name +
-              ": " + str(task.seconds_since_epoch))
+        print("{ \"module_name\": \"" + task.module_name + "\", \"function_name\": \"" + task.function_name +
+              "\", \"seconds_since_epoch\": " + str(task.seconds_since_epoch) + ", \"repeat_after_sec\": " + str(task.repeat_after_sec) + "}")
 
 
 def deep_sleep_sec(durationSec):
