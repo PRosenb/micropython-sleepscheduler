@@ -25,6 +25,7 @@ _tasks = []
 
 
 def schedule_on_cold_boot(moduleName, functionName):
+    global _start_seconds_since_epoch
     if not machine.wake_reason() is machine.DEEPSLEEP_RESET:
         print("on_cold_boot")
         module = __import__(moduleName)
@@ -118,13 +119,25 @@ def run_forever():
                     allow_deep_sleep
                     # only delay deepSleep on cold boot
                     and (machine.wake_reason() == machine.DEEPSLEEP_RESET
-                         or utime.time() > _start_seconds_since_epoch + initial_deep_sleep_delay_sec)
+                         or utime.time() >= _start_seconds_since_epoch + initial_deep_sleep_delay_sec)
                     and timeUntilFirstTask > 1
                 ):
                     deep_sleep_sec(timeUntilFirstTask - 1)
                 else:
-                    print("sleep({})".format(timeUntilFirstTask))
-                    utime.sleep(timeUntilFirstTask)
+                    if timeUntilFirstTask > 1:
+                        initial_no_deep_sleep_sec = (_start_seconds_since_epoch + initial_deep_sleep_delay_sec) - utime.time()
+                        if (initial_no_deep_sleep_sec > 0
+                                and timeUntilFirstTask - 1 > initial_no_deep_sleep_sec):
+                            # deep sleep prevention on cold boot
+                            print("sleep({}) due to cold boot".format(initial_no_deep_sleep_sec))
+                            utime.sleep(initial_no_deep_sleep_sec)
+                        else:
+                            print("sleep({})".format(timeUntilFirstTask - 1))
+                            utime.sleep(timeUntilFirstTask - 1)
+                    else:
+                        first_task_secondsSinceEpoch = first_task.secondsSinceEpoch
+                        while first_task_secondsSinceEpoch - utime.time() > 0:
+                            utime.sleep_ms(1)
         else:
             break
 
