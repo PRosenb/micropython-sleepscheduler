@@ -104,8 +104,8 @@ def run_forever():
     while True:
         if _tasks:
             first_task = _tasks[0]
-            timeUntilFirstTask = first_task.secondsSinceEpoch - utime.time()
-            if timeUntilFirstTask <= 0:
+            time_until_first_task = first_task.secondsSinceEpoch - utime.time()
+            if time_until_first_task <= 0:
                 execute_first_task()
                 if first_task.repeatAfterSec != 0:
                     schedule_at_sec(
@@ -115,24 +115,24 @@ def run_forever():
                         first_task.repeatAfterSec
                     )
             else:
-                if allow_deep_sleep and timeUntilFirstTask > 1:
+                if allow_deep_sleep and time_until_first_task > 1:
                     if (not machine.wake_reason() == machine.DEEPSLEEP_RESET
                          and utime.time() < _start_seconds_since_epoch + initial_deep_sleep_delay_sec):
                          # initial deep sleep delay
                         remaining_no_deep_sleep_sec = (_start_seconds_since_epoch + initial_deep_sleep_delay_sec) - utime.time()
-                        if (timeUntilFirstTask - 1 > remaining_no_deep_sleep_sec):
+                        if (time_until_first_task - 1 > remaining_no_deep_sleep_sec):
                             # deep sleep prevention on cold boot
                             print("sleep({}) due to cold boot".format(remaining_no_deep_sleep_sec))
                             utime.sleep(remaining_no_deep_sleep_sec)
                         else:
-                            print("sleep({}) due to cold boot".format(timeUntilFirstTask - 1))
-                            utime.sleep(timeUntilFirstTask - 1)
+                            print("sleep({}) due to cold boot".format(time_until_first_task - 1))
+                            utime.sleep(time_until_first_task - 1)
                     else:
-                        deep_sleep_sec(timeUntilFirstTask - 1)
+                        deep_sleep_sec(time_until_first_task - 1)
                 else:
-                    if timeUntilFirstTask > 1:
-                        print("sleep({})".format(timeUntilFirstTask - 1))
-                        utime.sleep(timeUntilFirstTask - 1)
+                    if time_until_first_task > 1:
+                        print("sleep({})".format(time_until_first_task - 1))
+                        utime.sleep(time_until_first_task - 1)
                     else:
                         first_task_secondsSinceEpoch = first_task.secondsSinceEpoch
                         while first_task_secondsSinceEpoch - utime.time() > 0:
