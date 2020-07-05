@@ -2,6 +2,9 @@ import machine
 import utime
 
 
+# -------------------------------------------------------------------------------------------------
+# Definitions
+# -------------------------------------------------------------------------------------------------
 class Task:
     def __init__(self, module_name, function_name, seconds_since_epoch, repeat_after_sec):
         self.module_name = module_name
@@ -13,6 +16,9 @@ class Task:
         return self.__dict__
 
 
+# -------------------------------------------------------------------------------------------------
+# Module variables
+# -------------------------------------------------------------------------------------------------
 initial_deep_sleep_delay_sec = 20
 allow_deep_sleep = True
 _start_seconds_since_epoch = utime.time()
@@ -107,6 +113,20 @@ def schedule_at_sec(module_name, function_name, seconds_since_epoch, repeat_afte
                            seconds_since_epoch, repeat_after_sec))
 
 
+def run_until_complete():
+    run_tasks(False)
+
+
+def run_forever():
+    run_tasks(True)
+
+
+def print_tasks():
+    for task in _tasks:
+        print("{ \"module_name\": \"" + task.module_name + "\", \"function_name\": \"" + task.function_name +
+              "\", \"seconds_since_epoch\": " + str(task.seconds_since_epoch) + ", \"repeat_after_sec\": " + str(task.repeat_after_sec) + "}")
+
+
 # -------------------------------------------------------------------------------------------------
 # Store/Restore to/from RTC-Memory
 # -------------------------------------------------------------------------------------------------
@@ -121,14 +141,12 @@ def restore_from_rtc_memory():
     rtc = machine.RTC()
     bytes = rtc.memory()
     decode_tasks(bytes)
+    print_tasks()
 
 
-def print_tasks():
-    for task in _tasks:
-        print("{ \"module_name\": \"" + task.module_name + "\", \"function_name\": \"" + task.function_name +
-              "\", \"seconds_since_epoch\": " + str(task.seconds_since_epoch) + ", \"repeat_after_sec\": " + str(task.repeat_after_sec) + "}")
-
-
+# -------------------------------------------------------------------------------------------------
+# Helper functions
+# -------------------------------------------------------------------------------------------------
 def deep_sleep_sec(durationSec):
     store()
     print("sleepscheduler: deepSleep for {} seconds".format(durationSec))
@@ -144,14 +162,6 @@ def execute_task(task):
     module = __import__(task.module_name)
     func = getattr(module, task.function_name)
     func()
-
-
-def run_until_complete():
-    run_tasks(False)
-
-
-def run_forever():
-    run_tasks(True)
 
 
 def run_tasks(forever):
@@ -202,4 +212,7 @@ def run_tasks(forever):
                 break
 
 
+# -------------------------------------------------------------------------------------------------
+# Init
+# -------------------------------------------------------------------------------------------------
 restore_from_rtc_memory()
