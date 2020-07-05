@@ -99,8 +99,12 @@ def execute_task(task):
     func()
 
 
+def run_until_complete():
+    run_tasks(False)
 def run_forever():
-    print("run_forever()")
+    run_tasks(True)
+
+def run_tasks(forever):
     while True:
         if _tasks:
             first_task = _tasks[0]
@@ -138,7 +142,11 @@ def run_forever():
                         while first_task_seconds_since_epoch - utime.time() > 0:
                             utime.sleep_ms(1)
         else:
-            break
+            if forever:
+                # deep sleep until an external interrupt occurs (if configured)
+                machine.deepsleep()
+            else:
+                break
 
 
 restore_from_rtc_memory()
