@@ -2,6 +2,11 @@ import sleepscheduler as sl
 import network
 from ntptime import settime
 import utime
+from machine import Pin
+import esp32
+
+
+BUILD_IN_LED_PIN = 2
 
 
 def init_on_cold_boot():
@@ -18,13 +23,20 @@ def init_on_cold_boot():
     settime()
     print(utime.localtime())
 
-    sl.schedule_at_sec("my_module", "scheduled_recurrently", utime.time(), 10)
-    # sl.allow_deep_sleep = False
+    first_schedule_time = list(utime.localtime())
+    # the time will be in the past so the function is scheduled immeditelly
+    # and then again after repeatAfterSec from the time it was supposed to be scheduled (seconds 0)
+    first_schedule_time[5] = 0 # seconds
+    sl.schedule_at_sec("my_module", "scheduled_recurrently", utime.mktime(first_schedule_time), 60)
 
 
 def scheduled_recurrently():
-    print("scheduled_recurrently, time: " + str(utime.time()))
-    print(utime.localtime())
-    utime.sleep(2)
-    # print("print_tasks:")
-    # sl.print_tasks()
+    print("scheduled_recurrently(), time: {}".format(utime.localtime()))
+
+    led_pin = Pin(BUILD_IN_LED_PIN, Pin.OUT)
+    esp32.rtc_gpio_hold_dis(led_pin)
+    if utime.localtime()[4] % 2 == 0:
+        led_pin.on()
+    else:
+        led_pin.off()
+    esp32.rtc_gpio_hold_en(led_pin)
