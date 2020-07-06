@@ -35,9 +35,11 @@ def scheduled_recurrently():
     print("scheduled_recurrently(), time: {}".format(utime.localtime()))
 
     led_pin = Pin(BUILD_IN_LED_PIN, Pin.OUT)
-    esp32.rtc_gpio_hold_dis(led_pin)
+    # disable pin hold to allow to change it
+    led_pin.init(Pin.OUT, pull=None)
     if utime.localtime()[4] % 2 == 0:
         led_pin.on()
     else:
         led_pin.off()
-    esp32.rtc_gpio_hold_en(led_pin)
+    # enable pin hold to keep the output state during deep sleep
+    led_pin.init(Pin.OUT, pull=Pin.PULL_HOLD)
