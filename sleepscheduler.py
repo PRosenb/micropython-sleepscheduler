@@ -68,7 +68,7 @@ def encode_tasks():
     for task in _tasks:
         task_bytes = encode_task(task)
         bytes = bytes + task_bytes
-    print(bytes)
+    # print(bytes)
     return bytes
 
 
@@ -207,6 +207,7 @@ def run_tasks(forever):
         else:
             if forever:
                 # deep sleep until an external interrupt occurs (if configured)
+                store()
                 machine.deepsleep()
             else:
                 break
