@@ -35,6 +35,10 @@ def init_on_cold_boot():
                        utime.mktime(first_schedule_time), 15)
 
 
+def function_div0():
+    return 1/0
+
+
 def led_on_even_minute():
     print("led_on_even_minute(), time: {}".format(utime.localtime()))
 

@@ -155,14 +155,26 @@ def deep_sleep_sec(durationSec):
 
 def execute_first_task():
     task = _tasks.pop(0)
-    execute_task(task)
+    return execute_task(task)
 
 
 def execute_task(task):
-    module = __import__(task.module_name)
-    func = getattr(module, task.function_name)
-    func()
-
+    try:
+        module = __import__(task.module_name)
+        func = getattr(module, task.function_name)
+        func()
+        return True
+    except ImportError:
+        print("ERROR: Cannot schedule task, module '{}' not found.".format(task.module_name))
+    except AttributeError:
+        print("ERROR: Cannot schedule task, function '{}' not found in module '{}'.".format(task.function_name, task.module_name))
+    except SyntaxError:
+        print("ERROR: Task of function '{}' in module '{}' failed due to syntax error.".format(task.function_name, task.module_name))
+    except BaseException as e:
+        print("ERROR: Task of function '{}' in module '{}' failed due to '{}'".format(task.function_name, task.module_name, e))
+    except:
+        print("ERROR: Task of function '{}' in module '{}' failed due to unknown failure in function.".format(task.function_name, task.module_name))
+    return False
 
 def run_tasks(forever):
     while True:
@@ -170,14 +182,15 @@ def run_tasks(forever):
             first_task = _tasks[0]
             time_until_first_task = first_task.seconds_since_epoch - utime.time()
             if time_until_first_task <= 0:
-                execute_first_task()
-                if first_task.repeat_after_sec != 0:
-                    schedule_at_sec(
-                        first_task.module_name,
-                        first_task.function_name,
-                        first_task.seconds_since_epoch + first_task.repeat_after_sec,
-                        first_task.repeat_after_sec
-                    )
+                successful = execute_first_task()
+                if successful:
+                    if first_task.repeat_after_sec != 0:
+                        schedule_at_sec(
+                            first_task.module_name,
+                            first_task.function_name,
+                            first_task.seconds_since_epoch + first_task.repeat_after_sec,
+                            first_task.repeat_after_sec
+                        )
             else:
                 if allow_deep_sleep and time_until_first_task > 1:
                     if (not machine.wake_reason() == machine.DEEPSLEEP_RESET
