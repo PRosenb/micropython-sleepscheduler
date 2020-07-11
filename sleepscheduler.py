@@ -28,14 +28,14 @@ _tasks = []
 # -------------------------------------------------------------------------------------------------
 # Encoding/Decoding
 # -------------------------------------------------------------------------------------------------
-def encode_task(task):
+def _encode_task(task):
     bytes = task.module_name.encode() + "\0" + task.function_name.encode() + "\0" + \
         task.seconds_since_epoch.to_bytes(
             4, 'big') + task.repeat_after_sec.to_bytes(4, 'big')
     return bytes
 
 
-def decode_task(bytes, start_index, tasks):
+def _decode_task(bytes, start_index, tasks):
     for i in range(start_index, len(bytes)):
         if bytes[i] == 0:
             module_name = bytes[start_index:i].decode()
@@ -63,22 +63,22 @@ def decode_task(bytes, start_index, tasks):
     return end_index
 
 
-def encode_tasks():
+def _encode_tasks():
     bytes = len(_tasks).to_bytes(4, 'big')
     for task in _tasks:
-        task_bytes = encode_task(task)
+        task_bytes = _encode_task(task)
         bytes = bytes + task_bytes
     # print(bytes)
     return bytes
 
 
-def decode_tasks(bytes):
+def _decode_tasks(bytes):
     task_count = int.from_bytes(bytes[0:4], 'big')
 
     tasks = list()
     start_index = 4
     for _ in range(0, task_count):
-        start_index = decode_task(bytes, start_index, tasks)
+        start_index = _decode_task(bytes, start_index, tasks)
 
     global _tasks
     _tasks = tasks
@@ -114,11 +114,11 @@ def schedule_at_sec(module_name, function_name, seconds_since_epoch, repeat_afte
 
 
 def run_until_complete():
-    run_tasks(False)
+    _run_tasks(False)
 
 
 def run_forever():
-    run_tasks(True)
+    _run_tasks(True)
 
 
 def print_tasks():
@@ -130,35 +130,35 @@ def print_tasks():
 # -------------------------------------------------------------------------------------------------
 # Store/Restore to/from RTC-Memory
 # -------------------------------------------------------------------------------------------------
-def store():
-    bytes = encode_tasks()
+def _store():
+    bytes = _encode_tasks()
     rtc = machine.RTC()
     rtc.memory(bytes)
 
 
-def restore_from_rtc_memory():
+def _restore_from_rtc_memory():
     print("sleepscheduler: restore from rtc memory")
     rtc = machine.RTC()
     bytes = rtc.memory()
-    decode_tasks(bytes)
+    _decode_tasks(bytes)
     print_tasks()
 
 
 # -------------------------------------------------------------------------------------------------
 # Helper functions
 # -------------------------------------------------------------------------------------------------
-def deep_sleep_sec(durationSec):
-    store()
-    print("sleepscheduler: deepSleep for {} seconds".format(durationSec))
+def _deep_sleep_sec(durationSec):
+    _store()
+    print("sleepscheduler: deep sleep for {} seconds".format(durationSec))
     machine.deepsleep(durationSec * 1000)
 
 
-def execute_first_task():
+def _execute_first_task():
     task = _tasks.pop(0)
-    return execute_task(task)
+    return _execute_task(task)
 
 
-def execute_task(task):
+def _execute_task(task):
     try:
         module = __import__(task.module_name)
         func = getattr(module, task.function_name)
@@ -176,13 +176,13 @@ def execute_task(task):
         print("ERROR: Task of function '{}' in module '{}' failed due to unknown failure in function.".format(task.function_name, task.module_name))
     return False
 
-def run_tasks(forever):
+def _run_tasks(forever):
     while True:
         if _tasks:
             first_task = _tasks[0]
             time_until_first_task = first_task.seconds_since_epoch - utime.time()
             if time_until_first_task <= 0:
-                successful = execute_first_task()
+                successful = _execute_first_task()
                 if successful:
                     if first_task.repeat_after_sec != 0:
                         schedule_at_sec(
@@ -208,7 +208,7 @@ def run_tasks(forever):
                                 time_until_first_task - 1))
                             utime.sleep(time_until_first_task - 1)
                     else:
-                        deep_sleep_sec(time_until_first_task - 1)
+                        _deep_sleep_sec(time_until_first_task - 1)
                 else:
                     if time_until_first_task > 1:
                         print("sleep({})".format(time_until_first_task - 1))
@@ -220,7 +220,8 @@ def run_tasks(forever):
         else:
             if forever:
                 # deep sleep until an external interrupt occurs (if configured)
-                store()
+                _store()
+                print("sleepscheduler: deep sleep infinitely")
                 machine.deepsleep()
             else:
                 break
@@ -229,4 +230,4 @@ def run_tasks(forever):
 # -------------------------------------------------------------------------------------------------
 # Init
 # -------------------------------------------------------------------------------------------------
-restore_from_rtc_memory()
+_restore_from_rtc_memory()
