@@ -3,6 +3,58 @@ import utime
 
 
 # -------------------------------------------------------------------------------------------------
+# Module variables
+# -------------------------------------------------------------------------------------------------
+initial_deep_sleep_delay_sec = 20
+allow_deep_sleep = True
+_start_seconds_since_epoch = utime.time()
+_tasks = []
+
+
+# -------------------------------------------------------------------------------------------------
+# Public functions
+# -------------------------------------------------------------------------------------------------
+def schedule_on_cold_boot(module_name, function_name):
+    global _start_seconds_since_epoch
+    if not machine.wake_reason() is machine.DEEPSLEEP_RESET:
+        print("on_cold_boot")
+        module = __import__(module_name)
+        func = getattr(module, function_name)
+        func()
+        # set _start_seconds_since_epoch in case func() set the time
+        _start_seconds_since_epoch = utime.time()
+
+
+def schedule_at_sec(module_name, function_name, seconds_since_epoch, repeat_after_sec=0):
+    newTask = Task(module_name, function_name,
+                   seconds_since_epoch, repeat_after_sec)
+    inserted = False
+    for i in range(len(_tasks)):
+        task = _tasks[i]
+        if (task.seconds_since_epoch > seconds_since_epoch):
+            _tasks.insert(i, newTask)
+            inserted = True
+            break
+    if not inserted:
+        _tasks.append(Task(module_name, function_name,
+                           seconds_since_epoch, repeat_after_sec))
+
+
+def run_until_complete():
+    _run_tasks(False)
+
+
+def run_forever():
+    _run_tasks(True)
+
+
+def print_tasks():
+    for task in _tasks:
+        print("{ \"module_name\": \"" + task.module_name + "\", \"function_name\": \"" + task.function_name +
+              "\", \"seconds_since_epoch\": " + str(task.seconds_since_epoch) + ", \"repeat_after_sec\": " + str(task.repeat_after_sec) + "}")
+
+
+# -------------------------------------------------------------------------------------------------
 # Definitions
 # -------------------------------------------------------------------------------------------------
 class Task:
@@ -14,15 +66,6 @@ class Task:
 
     def __str__(self):
         return self.__dict__
-
-
-# -------------------------------------------------------------------------------------------------
-# Module variables
-# -------------------------------------------------------------------------------------------------
-initial_deep_sleep_delay_sec = 20
-allow_deep_sleep = True
-_start_seconds_since_epoch = utime.time()
-_tasks = []
 
 
 # -------------------------------------------------------------------------------------------------
@@ -85,49 +128,6 @@ def _decode_tasks(bytes):
 
 
 # -------------------------------------------------------------------------------------------------
-# Public functions
-# -------------------------------------------------------------------------------------------------
-def schedule_on_cold_boot(module_name, function_name):
-    global _start_seconds_since_epoch
-    if not machine.wake_reason() is machine.DEEPSLEEP_RESET:
-        print("on_cold_boot")
-        module = __import__(module_name)
-        func = getattr(module, function_name)
-        func()
-        # set _start_seconds_since_epoch in case func() set the time
-        _start_seconds_since_epoch = utime.time()
-
-
-def schedule_at_sec(module_name, function_name, seconds_since_epoch, repeat_after_sec=0):
-    newTask = Task(module_name, function_name,
-                   seconds_since_epoch, repeat_after_sec)
-    inserted = False
-    for i in range(len(_tasks)):
-        task = _tasks[i]
-        if (task.seconds_since_epoch > seconds_since_epoch):
-            _tasks.insert(i, newTask)
-            inserted = True
-            break
-    if not inserted:
-        _tasks.append(Task(module_name, function_name,
-                           seconds_since_epoch, repeat_after_sec))
-
-
-def run_until_complete():
-    _run_tasks(False)
-
-
-def run_forever():
-    _run_tasks(True)
-
-
-def print_tasks():
-    for task in _tasks:
-        print("{ \"module_name\": \"" + task.module_name + "\", \"function_name\": \"" + task.function_name +
-              "\", \"seconds_since_epoch\": " + str(task.seconds_since_epoch) + ", \"repeat_after_sec\": " + str(task.repeat_after_sec) + "}")
-
-
-# -------------------------------------------------------------------------------------------------
 # Store/Restore to/from RTC-Memory
 # -------------------------------------------------------------------------------------------------
 def _store():
@@ -165,16 +165,22 @@ def _execute_task(task):
         func()
         return True
     except ImportError:
-        print("ERROR: Cannot schedule task, module '{}' not found.".format(task.module_name))
+        print("ERROR: Cannot schedule task, module '{}' not found.".format(
+            task.module_name))
     except AttributeError:
-        print("ERROR: Cannot schedule task, function '{}' not found in module '{}'.".format(task.function_name, task.module_name))
+        print("ERROR: Cannot schedule task, function '{}' not found in module '{}'.".format(
+            task.function_name, task.module_name))
     except SyntaxError:
-        print("ERROR: Task of function '{}' in module '{}' failed due to syntax error.".format(task.function_name, task.module_name))
+        print("ERROR: Task of function '{}' in module '{}' failed due to syntax error.".format(
+            task.function_name, task.module_name))
     except BaseException as e:
-        print("ERROR: Task of function '{}' in module '{}' failed due to '{}'".format(task.function_name, task.module_name, e))
+        print("ERROR: Task of function '{}' in module '{}' failed due to '{}'".format(
+            task.function_name, task.module_name, e))
     except:
-        print("ERROR: Task of function '{}' in module '{}' failed due to unknown failure in function.".format(task.function_name, task.module_name))
+        print("ERROR: Task of function '{}' in module '{}' failed due to unknown failure in function.".format(
+            task.function_name, task.module_name))
     return False
+
 
 def _run_tasks(forever):
     while True:
