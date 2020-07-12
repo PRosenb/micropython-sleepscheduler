@@ -153,11 +153,6 @@ def _deep_sleep_sec(durationSec):
     machine.deepsleep(durationSec * 1000)
 
 
-def _execute_first_task():
-    task = _tasks.pop(0)
-    return _execute_task(task)
-
-
 def _execute_task(task):
     try:
         module = __import__(task.module_name)
@@ -188,15 +183,23 @@ def _run_tasks(forever):
             first_task = _tasks[0]
             time_until_first_task = first_task.seconds_since_epoch - utime.time()
             if time_until_first_task <= 0:
-                successful = _execute_first_task()
-                if successful:
-                    if first_task.repeat_after_sec != 0:
-                        schedule_at_sec(
-                            first_task.module_name,
-                            first_task.function_name,
-                            first_task.seconds_since_epoch + first_task.repeat_after_sec,
-                            first_task.repeat_after_sec
-                        )
+                # remove the first task from the list
+                _tasks.pop(0)
+                # Schedule the task at the next execution time if it is a repeating task.
+                # This needs to be done before executing the task so that it can remove itself
+                # from the scheduled tasks if it wants to.
+                if first_task.repeat_after_sec != 0:
+                    schedule_at_sec(
+                        first_task.module_name,
+                        first_task.function_name,
+                        first_task.seconds_since_epoch + first_task.repeat_after_sec,
+                        first_task.repeat_after_sec
+                    )
+                successful = _execute_task(first_task)
+                if not successful and first_task.repeat_after_sec != 0:
+                    # the task was added already so on failure we remove it
+                    remove_all(first_task.module_name,
+                               first_task.function_name)
             else:
                 if allow_deep_sleep and time_until_first_task > 1:
                     if (not machine.wake_reason() == machine.DEEPSLEEP_RESET
@@ -230,6 +233,7 @@ def _run_tasks(forever):
                 print("sleepscheduler: deep sleep infinitely")
                 machine.deepsleep()
             else:
+                print("All tasks finished, exiting sleepscheduler.")
                 break
 
 
