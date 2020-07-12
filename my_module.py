@@ -52,6 +52,17 @@ def led_on_even_minute():
     # enable pin hold to keep the output state during deep sleep
     led_pin.init(Pin.OUT, pull=Pin.PULL_HOLD)
 
+    if len(sl.rtc_memory_bytes) == 0:
+        print("led_on_even_minute(): rtc_memory_bytes empty")
+        value = 1
+        sl.rtc_memory_bytes.extend(value.to_bytes(2, 'big'))
+    else:
+        value = int.from_bytes(sl.rtc_memory_bytes[0:2], 'big')
+        if value == 1:
+            print("finish led_on_even_minute()")
+            sl.remove_all("my_module", "led_on_even_minute")
+            sl.rtc_memory_bytes = 1
+
 
 def raw_temperature_every_half_a_minute():
     print("raw_temperature: " + str(esp32.raw_temperature()))

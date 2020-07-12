@@ -7,6 +7,11 @@ import utime
 # -------------------------------------------------------------------------------------------------
 initial_deep_sleep_delay_sec = 20
 allow_deep_sleep = True
+# This library uses machine.RTC().memory() to store the list of tasks while the CPU is in deep sleep.
+# When a task stores some data there too, it will be overwritten by sleepscheduler.
+# A task can put data to rtc_memory_bytes instead and sleepscheduler will store and restore
+# that data before and after deep sleep.
+rtc_memory_bytes = bytearray()
 _start_seconds_since_epoch = utime.time()
 _tasks = []
 
@@ -138,6 +143,13 @@ def _encode_tasks():
     for task in _tasks:
         task_bytes = _encode_task(task)
         bytes = bytes + task_bytes
+    
+    # add potential rtc_memory_bytes
+    try:
+        bytes = bytes + rtc_memory_bytes
+    except TypeError as e:
+        print("ERROR: Cannot store rtc_memory_bytes to RTC memory due to '{}'".format(e))
+    
     # print(bytes)
     return bytes
 
@@ -152,6 +164,10 @@ def _decode_tasks(bytes):
 
     global _tasks
     _tasks = tasks
+
+    # restore potential rtc_memory_bytes
+    global rtc_memory_bytes
+    rtc_memory_bytes = bytearray(bytes[start_index:len(bytes)])
 
 
 # -------------------------------------------------------------------------------------------------
