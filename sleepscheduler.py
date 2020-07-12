@@ -40,6 +40,33 @@ def schedule_at_sec(module_name, function_name, seconds_since_epoch, repeat_afte
                            seconds_since_epoch, repeat_after_sec))
 
 
+def remove_all(module_name, function_name):
+    global _tasks
+    temp_tasks = []
+    for task in _tasks:
+        if task.function_name != function_name or task.module_name != module_name:
+            temp_tasks.append(task)
+    _tasks = temp_tasks
+
+
+def remove_all_by_function_name(function_name):
+    global _tasks
+    temp_tasks = []
+    for task in _tasks:
+        if task.function_name != function_name:
+            temp_tasks.append(task)
+    _tasks = temp_tasks
+
+
+def remove_all_by_module_name(module_name):
+    global _tasks
+    temp_tasks = []
+    for task in _tasks:
+        if task.module_name != module_name:
+            temp_tasks.append(task)
+    _tasks = temp_tasks
+
+
 def run_until_complete():
     _run_tasks(False)
 
