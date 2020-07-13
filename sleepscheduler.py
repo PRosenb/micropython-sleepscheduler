@@ -19,46 +19,47 @@ _tasks = []
 # -------------------------------------------------------------------------------------------------
 # Public functions
 # -------------------------------------------------------------------------------------------------
-def schedule_on_cold_boot(module_name, function_name):
+def schedule_on_cold_boot(function):
     global _start_seconds_since_epoch
     if not machine.wake_reason() is machine.DEEPSLEEP_RESET:
         print("on_cold_boot")
-        module = __import__(module_name)
-        func = getattr(module, function_name)
-        func()
+        function()
         # set _start_seconds_since_epoch in case func() set the time
         _start_seconds_since_epoch = utime.time()
 
 
-def schedule_at_sec(module_name, function_name, seconds_since_epoch, repeat_after_sec=0):
-    newTask = Task(module_name, function_name,
-                   seconds_since_epoch, repeat_after_sec)
+def schedule_at_sec(module_name, function, seconds_since_epoch, repeat_after_sec=0):
+    if callable(function):
+        function_name = function.__name__
+    else:
+        function_name = function
+    new_task = Task(module_name, function_name,
+                    seconds_since_epoch, repeat_after_sec)
     inserted = False
     for i in range(len(_tasks)):
         task = _tasks[i]
         if (task.seconds_since_epoch > seconds_since_epoch):
-            _tasks.insert(i, newTask)
+            _tasks.insert(i, new_task)
             inserted = True
             break
     if not inserted:
-        _tasks.append(Task(module_name, function_name,
-                           seconds_since_epoch, repeat_after_sec))
+        _tasks.append(new_task)
 
 
-def remove_all(module_name, function_name):
+def remove_all(module_name, function):
     global _tasks
     temp_tasks = []
     for task in _tasks:
-        if task.function_name != function_name or task.module_name != module_name:
+        if task.function_name != function.__name__ or task.module_name != module_name:
             temp_tasks.append(task)
     _tasks = temp_tasks
 
 
-def remove_all_by_function_name(function_name):
+def remove_all_by_function_name(function):
     global _tasks
     temp_tasks = []
     for task in _tasks:
-        if task.function_name != function_name:
+        if task.function_name != function.__name__:
             temp_tasks.append(task)
     _tasks = temp_tasks
 
@@ -143,13 +144,13 @@ def _encode_tasks():
     for task in _tasks:
         task_bytes = _encode_task(task)
         bytes = bytes + task_bytes
-    
+
     # add potential rtc_memory_bytes
     try:
         bytes = bytes + rtc_memory_bytes
     except TypeError as e:
         print("ERROR: Cannot store rtc_memory_bytes to RTC memory due to '{}'".format(e))
-    
+
     # print(bytes)
     return bytes
 

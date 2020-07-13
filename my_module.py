@@ -27,11 +27,11 @@ def init_on_cold_boot():
     # the time will be in the past so the function is scheduled immeditelly
     # and then again after repeatAfterSec from the time it was supposed to be scheduled (seconds 0)
     first_schedule_time[5] = 0  # seconds
-    sl.schedule_at_sec("my_module", "led_on_even_minute",
+    sl.schedule_at_sec(__name__, led_on_even_minute,
                        utime.mktime(first_schedule_time), 60)
-    sl.schedule_at_sec("my_module", "raw_temperature_every_half_a_minute",
+    sl.schedule_at_sec(__name__, raw_temperature_every_half_a_minute,
                        utime.mktime(first_schedule_time), 30)
-    sl.schedule_at_sec("my_module", "hall_sensor_every_15_seconds",
+    sl.schedule_at_sec(__name__, hall_sensor_every_15_seconds,
                        utime.mktime(first_schedule_time), 15)
 
 
@@ -60,13 +60,14 @@ def led_on_even_minute():
         value = int.from_bytes(sl.rtc_memory_bytes[0:2], 'big')
         if value == 1:
             print("finish led_on_even_minute()")
-            sl.remove_all("my_module", "led_on_even_minute")
-            sl.rtc_memory_bytes = 1
+            sl.remove_all(__name__, led_on_even_minute)
 
 
 def raw_temperature_every_half_a_minute():
     print("raw_temperature: " + str(esp32.raw_temperature()))
+    # sl.remove_all(__name__, raw_temperature_every_half_a_minute)
 
 
 def hall_sensor_every_15_seconds():
     print("hall_sensor: " + str(esp32.hall_sensor()))
+    # sl.remove_all(__name__, hall_sensor_every_15_seconds)
