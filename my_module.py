@@ -58,7 +58,9 @@ def led_on_even_minute():
         sl.rtc_memory_bytes.extend(value.to_bytes(2, 'big'))
     else:
         value = int.from_bytes(sl.rtc_memory_bytes[0:2], 'big')
-        if value == 1:
+        value = value + 1
+        sl.rtc_memory_bytes[0:2] = value.to_bytes(2, 'big')
+        if value >= 3:
             print("finish led_on_even_minute()")
             sl.remove_all(__name__, led_on_even_minute)
 
