@@ -1,0 +1,6 @@
+https://docs.micropython.org/en/latest/reference/packages.html
+
+# sdist_upip.py is from:
+https://github.com/micropython/micropython-lib/blob/master/sdist_upip.py
+
+python3 setup.py sdist
