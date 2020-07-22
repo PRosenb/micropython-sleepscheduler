@@ -29,6 +29,19 @@ def schedule_on_cold_boot(function):
 
 
 def schedule_at_sec(module_name, function, seconds_since_epoch, repeat_after_sec=0):
+    """Schedule a function at seconds since Epoch.
+
+    Schedule the `function` at `seconds_since_epoch` since Unix Epoch in seconds.
+
+    Args:
+        module_name (str): Module where the function is defined
+        function (callable/str): Function to be called. Can either be a function of a string with the fuction name
+        seconds_since_epoch (int): seconds since Epoch when the function is executed
+        repeat_after_sec (int): Repeat the function every given seconds
+
+    Returns:
+        None
+    """
     if callable(function):
         function_name = function.__name__
     else:
