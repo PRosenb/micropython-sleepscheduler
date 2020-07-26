@@ -1,8 +1,16 @@
+Package
+=======
 https://docs.micropython.org/en/latest/reference/packages.html
 
 # sdist_upip.py is from:
 https://github.com/micropython/micropython-lib/blob/master/sdist_upip.py
 https://github.com/pfalcon/pycopy-lib/blob/master/sdist_upip.py
 
+Installation on OSX
+- python3 -m pip install --user --upgrade twine
+
 cd sleepscheduler
-python3 setup.py sdist
+# package
+- python3 setup.py sdist
+# Upload
+- python3 -m twine upload --repository testpypi dist/*

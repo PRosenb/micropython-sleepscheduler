@@ -11,8 +11,8 @@ sdist_upip = imp.load_source('sdist_upip', './sdist_upip.py')
 
 setup(name='micropython-sleepscheduler',
       version='0.0.1',
-      description='A simple scheduler for ESP32 supporting deep sleep',
-      long_description='This library aims to make it easy to execute tasks on regular basis and put the CPU on sleep in between.',
+      description='A simple scheduler for ESP32 supporting deep sleep.',
+      long_description='This library for ESP32 aims to make it easy to execute tasks on regular basis and put the CPU on sleep in between.',
       url='https://github.com/PRosenb/sleepscheduler',
       author='Pete',
       author_email='arduino@pete.ch',
