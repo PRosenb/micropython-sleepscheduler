@@ -22,7 +22,7 @@ _tasks = []
 def schedule_on_cold_boot(function):
     global _start_seconds_since_epoch
     if not machine.wake_reason() is machine.DEEPSLEEP_RESET:
-        print("on_cold_boot")
+        print("sleepscheduler: schedule_on_cold_boot()")
         function()
         # set _start_seconds_since_epoch in case func() set the time
         _start_seconds_since_epoch = utime.time()
@@ -96,7 +96,7 @@ def run_forever():
 
 def print_tasks():
     for task in _tasks:
-        print("{ \"module_name\": \"" + task.module_name + "\", \"function_name\": \"" + task.function_name +
+        print("sleepscheduler: print_tasks() { \"module_name\": \"" + task.module_name + "\", \"function_name\": \"" + task.function_name +
               "\", \"seconds_since_epoch\": " + str(task.seconds_since_epoch) + ", \"repeat_after_sec\": " + str(task.repeat_after_sec) + "}")
 
 
@@ -162,7 +162,7 @@ def _encode_tasks():
     try:
         bytes = bytes + rtc_memory_bytes
     except TypeError as e:
-        print("ERROR: Cannot store rtc_memory_bytes to RTC memory due to '{}'".format(e))
+        print("sleepscheduler: ERROR: Cannot store rtc_memory_bytes to RTC memory due to '{}'".format(e))
 
     # print(bytes)
     return bytes
@@ -194,7 +194,7 @@ def _store():
 
 
 def _restore_from_rtc_memory():
-    print("sleepscheduler: restore from rtc memory")
+    print("sleepscheduler: Restore from rtc memory")
     rtc = machine.RTC()
     bytes = rtc.memory()
     _decode_tasks(bytes)
@@ -206,7 +206,7 @@ def _restore_from_rtc_memory():
 # -------------------------------------------------------------------------------------------------
 def _deep_sleep_sec(durationSec):
     _store()
-    print("sleepscheduler: deep sleep for {} seconds".format(durationSec))
+    print("sleepscheduler: Deep sleep for {} seconds".format(durationSec))
     machine.deepsleep(durationSec * 1000)
 
 
@@ -217,19 +217,19 @@ def _execute_task(task):
         func()
         return True
     except ImportError:
-        print("ERROR: Cannot schedule task, module '{}' not found.".format(
+        print("sleepscheduler: ERROR: Cannot schedule task, module '{}' not found.".format(
             task.module_name))
     except AttributeError:
-        print("ERROR: Cannot schedule task, function '{}' not found in module '{}'.".format(
+        print("sleepscheduler: ERROR: Cannot schedule task, function '{}' not found in module '{}'.".format(
             task.function_name, task.module_name))
     except SyntaxError:
-        print("ERROR: Task of function '{}' in module '{}' failed due to syntax error.".format(
+        print("sleepscheduler: ERROR: Task of function '{}' in module '{}' failed due to syntax error.".format(
             task.function_name, task.module_name))
     except BaseException as e:
-        print("ERROR: Task of function '{}' in module '{}' failed due to '{}'".format(
+        print("sleepscheduler: ERROR: Task of function '{}' in module '{}' failed due to '{}'".format(
             task.function_name, task.module_name, e))
     except:
-        print("ERROR: Task of function '{}' in module '{}' failed due to unknown failure in function.".format(
+        print("sleepscheduler: ERROR: Task of function '{}' in module '{}' failed due to unknown failure in function.".format(
             task.function_name, task.module_name))
     return False
 
@@ -266,18 +266,19 @@ def _run_tasks(forever):
                             _start_seconds_since_epoch + initial_deep_sleep_delay_sec) - utime.time()
                         if (time_until_first_task - 1 > remaining_no_deep_sleep_sec):
                             # deep sleep prevention on cold boot
-                            print("sleep({}) due to cold boot".format(
+                            print("sleepscheduler: sleep({}) due to cold boot".format(
                                 remaining_no_deep_sleep_sec))
                             utime.sleep(remaining_no_deep_sleep_sec)
                         else:
-                            print("sleep({}) due to cold boot".format(
+                            print("sleepscheduler: sleep({}) due to cold boot".format(
                                 time_until_first_task - 1))
                             utime.sleep(time_until_first_task - 1)
                     else:
                         _deep_sleep_sec(time_until_first_task - 1)
                 else:
                     if time_until_first_task > 1:
-                        print("sleep({})".format(time_until_first_task - 1))
+                        print("sleepscheduler: sleep({})".format(
+                            time_until_first_task - 1))
                         utime.sleep(time_until_first_task - 1)
                     else:
                         first_task_seconds_since_epoch = first_task.seconds_since_epoch
@@ -287,10 +288,10 @@ def _run_tasks(forever):
             if forever:
                 # deep sleep until an external interrupt occurs (if configured)
                 _store()
-                print("sleepscheduler: deep sleep infinitely")
+                print("sleepscheduler: Deep sleep infinitely")
                 machine.deepsleep()
             else:
-                print("All tasks finished, exiting sleepscheduler.")
+                print("sleepscheduler: All tasks finished, exiting sleepscheduler.")
                 break
 
 
