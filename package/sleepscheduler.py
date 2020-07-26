@@ -59,6 +59,10 @@ def schedule_at_sec(module_name, function, seconds_since_epoch, repeat_after_sec
         _tasks.append(new_task)
 
 
+def schedule_immediately(module_name, function, repeat_after_sec=0):
+    schedule_at_sec(module_name, function, utime.time(), repeat_after_sec)
+
+
 def remove_all(module_name, function):
     if callable(function):
         function_name = function.__name__
@@ -266,6 +270,7 @@ def _run_tasks(forever):
                     remove_all(first_task.module_name,
                                first_task.function_name)
             else:
+                # - 1 below is to wake up one second before the task executes
                 if allow_deep_sleep and time_until_first_task > 1:
                     if (not machine.wake_reason() == machine.DEEPSLEEP_RESET
                             and utime.time() < _start_seconds_since_epoch + initial_deep_sleep_delay_sec):
@@ -289,6 +294,7 @@ def _run_tasks(forever):
                             time_until_first_task - 1))
                         utime.sleep(time_until_first_task - 1)
                     else:
+                        # wait in ms to execute the task when the next second starts
                         first_task_seconds_since_epoch = first_task.seconds_since_epoch
                         while first_task_seconds_since_epoch - utime.time() > 0:
                             utime.sleep_ms(1)
