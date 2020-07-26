@@ -3,11 +3,13 @@ https://github.com/PRosenb/micropython-sleepscheduler
 
 Sleepscheduler for ESP32 aims to make it easy to execute tasks on regular basis and put the CPU on sleep in between.
 
+<!---
 ## Installation ##
 ```
 import upip
 upip.install("micropython-sleepscheduler")
 ```
+-->
 
 ## Contributions ##
 Enhancements and improvements are welcome.
