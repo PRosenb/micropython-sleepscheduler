@@ -1,4 +1,4 @@
-# Micropython Sleepscheduler #
+# Micropython Sleepscheduler for ESP32 #
 https://github.com/PRosenb/micropython-sleepscheduler
 
 Sleepscheduler for ESP32 aims to make it easy to execute tasks on regular basis and put the CPU on sleep in between.
