@@ -2,5 +2,7 @@ https://docs.micropython.org/en/latest/reference/packages.html
 
 # sdist_upip.py is from:
 https://github.com/micropython/micropython-lib/blob/master/sdist_upip.py
+https://github.com/pfalcon/pycopy-lib/blob/master/sdist_upip.py
 
+cd sleepscheduler
 python3 setup.py sdist
