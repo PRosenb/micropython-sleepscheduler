@@ -60,19 +60,27 @@ def schedule_at_sec(module_name, function, seconds_since_epoch, repeat_after_sec
 
 
 def remove_all(module_name, function):
+    if callable(function):
+        function_name = function.__name__
+    else:
+        function_name = function
     global _tasks
     temp_tasks = []
     for task in _tasks:
-        if task.function_name != function.__name__ or task.module_name != module_name:
+        if task.function_name != function_name or task.module_name != module_name:
             temp_tasks.append(task)
     _tasks = temp_tasks
 
 
 def remove_all_by_function_name(function):
+    if callable(function):
+        function_name = function.__name__
+    else:
+        function_name = function
     global _tasks
     temp_tasks = []
     for task in _tasks:
-        if task.function_name != function.__name__:
+        if task.function_name != function_name:
             temp_tasks.append(task)
     _tasks = temp_tasks
 
