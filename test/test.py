@@ -14,7 +14,8 @@ def init_on_cold_boot():
     set_on_cold_boot = True
     sl.schedule_immediately(__name__, every_14_seconds, 14)
     # also test schedule_immediately() with function_name
-    sl.schedule_immediately(__name__, "every_30_seconds", 30)
+    sl.schedule_immediately(__name__, "every_29_seconds", 29)
+    sl.schedule_next_full_minute(__name__, next_full_minute)
     # test that a function with an exception it not scheduled anymore
     sl.schedule_immediately(__name__, function_div0, 10)
     sl.print_tasks()
@@ -39,7 +40,7 @@ def finish_test():
     print("finish_test(), time: {}".format(utime.time()))
     # test removal with function and function_name
     sl.remove_all(__name__, every_14_seconds)
-    sl.remove_all(__name__, "every_30_seconds")
+    sl.remove_all(__name__, "every_29_seconds")
 
     # also test other remove functions with adding a task back
     # remove_all_by_function_name() with function and function_name
@@ -51,12 +52,12 @@ def finish_test():
     sl.schedule_immediately(__name__, every_14_seconds, 14)
     sl.remove_all_by_module_name(__name__)
 
-    expected = [0, 0, 0, 14, INITIAL_DEEP_SLEEP_DELAY, 28, 30, 42, 56]
+    expected = [0, 0, 0, 14, INITIAL_DEEP_SLEEP_DELAY, 28, 29, 42, 56, 58, 60]
     results = []
 
-    index = 4
+    index = 0
     while index < len(sl.rtc_memory_bytes):
-        result = int.from_bytes(sl.rtc_memory_bytes[index - 4:index], 'big')
+        result = int.from_bytes(sl.rtc_memory_bytes[index:index + 4], 'big')
         results.append(result)
         index = index + 4
 
@@ -70,19 +71,32 @@ def finish_test():
     else:
         print("TEST_ERROR Wrong amount of results. Expected '{}', was '{}'".format(
             len(expected), len(results)))
+        expected_str = ""
+        for i in range(len(expected)):
+            expected_str = expected_str + str(expected[i]) + " "
+        print("expected: {}".format(expected_str))
+        results_str = ""
+        for i in range(len(results)):
+            results_str = results_str + str(results[i]) + " "
+        print("results: {}".format(results_str))
         failure = True
 
     if not failure:
         print("TEST_SUCCESS")
 
 
-def every_30_seconds():
-    print("every_30_seconds(), time: {}".format(utime.time()))
+def every_14_seconds():
+    print("every_14_seconds(), time: {}".format(utime.time()))
     store_current_time()
 
 
-def every_14_seconds():
-    print("every_14_seconds(), time: {}".format(utime.time()))
+def every_29_seconds():
+    print("every_29_seconds(), time: {}".format(utime.time()))
+    store_current_time()
+
+
+def next_full_minute():
+    print("next_full_minute(), time: {}".format(utime.time()))
     store_current_time()
 
 

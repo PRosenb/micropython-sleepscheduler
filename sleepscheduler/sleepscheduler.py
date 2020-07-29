@@ -77,6 +77,44 @@ def schedule_immediately(module_name, function, repeat_after_sec=0):
     schedule_at_sec(module_name, function, utime.time(), repeat_after_sec)
 
 
+def schedule_next_full_minute(module_name, function, repeat_after_sec=0):
+    """Schedule a function at the next full minute.
+
+    Args:
+        module_name (str): Module where the function is defined
+        function (callable/str): Function to be called. Can either be a function of a string with the fuction name
+        repeat_after_sec (int): Repeat the function every given seconds afterwards
+    Returns:
+        None
+    """
+    local_time = list(utime.localtime())
+    # set back to the minute just passed
+    local_time[5] = 0  # seconds
+    epoch_time = utime.mktime(local_time)
+    # increment to the next full minute
+    epoch_time = epoch_time + 60
+    schedule_at_sec(module_name, function, epoch_time, repeat_after_sec)
+
+
+def schedule_next_full_hour(module_name, function, repeat_after_sec=0):
+    """Schedule a function at the next full hour.
+
+    Args:
+        module_name (str): Module where the function is defined
+        function (callable/str): Function to be called. Can either be a function of a string with the fuction name
+        repeat_after_sec (int): Repeat the function every given seconds afterwards
+    Returns:
+        None
+    """
+    local_time = list(utime.localtime())
+    # set back to the hour just passed
+    local_time[4] = 0  # minutes
+    epoch_time = utime.mktime(local_time)
+    # increment to the next full hour
+    epoch_time = epoch_time + 3600
+    schedule_at_sec(module_name, function, epoch_time, repeat_after_sec)
+
+
 def remove_all(module_name, function):
     """Removes all given functions of module `module_name`.
 
