@@ -37,18 +37,9 @@ def init_on_cold_boot():
     settime()
     print(utime.localtime())
 
-    # get current local time and convert it to a modifiable list
-    first_schedule_time = list(utime.localtime())
-    # When setting the second part to 0,
-    # the time will be in the past so the function is scheduled immeditelly
-    # and then again after repeatAfterSec from the time it was supposed to be scheduled (seconds 0).
-    first_schedule_time[5] = 0  # seconds
-    sl.schedule_at_sec(__name__, led_on_even_minute,
-                       utime.mktime(first_schedule_time), 60)
-    sl.schedule_at_sec(__name__, raw_temperature_every_half_a_minute,
-                       utime.mktime(first_schedule_time), 30)
-    sl.schedule_at_sec(__name__, hall_sensor_every_15_seconds,
-                       utime.mktime(first_schedule_time), 15)
+    sl.schedule_next_full_minute(__name__, led_on_even_minute, 60)
+    sl.schedule_next_full_minute(__name__, raw_temperature_every_30_seconds, 30)
+    sl.schedule_next_full_minute(__name__, hall_sensor_every_15_seconds, 15)
 
 
 def led_on_even_minute():
@@ -81,11 +72,11 @@ def led_on_even_minute():
             sl.remove_all(__name__, led_on_even_minute)
 
 
-def raw_temperature_every_half_a_minute():
-    print("raw_temperature: " + str(esp32.raw_temperature()))
-    # sl.remove_all(__name__, raw_temperature_every_half_a_minute)
+def raw_temperature_every_30_seconds():
+    print("raw_temperature_every_30_seconds: " + str(esp32.raw_temperature()))
+    # sl.remove_all(__name__, raw_temperature_every_30_seconds)
 
 
 def hall_sensor_every_15_seconds():
-    print("hall_sensor: " + str(esp32.hall_sensor()))
+    print("hall_sensor_every_15_seconds: " + str(esp32.hall_sensor()))
     # sl.remove_all(__name__, hall_sensor_every_15_seconds)
