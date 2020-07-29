@@ -7,9 +7,9 @@ set_on_cold_boot = False
 
 
 def init_on_cold_boot():
-    sl.schedule_at_sec(__name__, finish_test, utime.time() + 61)
-    sl.schedule_at_sec(__name__, check_no_deep_sleep,
-                       utime.time() + INITIAL_DEEP_SLEEP_DELAY)
+    sl.schedule_epoch_sec(__name__, finish_test, utime.time() + 61)
+    sl.schedule_epoch_sec(__name__, check_no_deep_sleep,
+                          utime.time() + INITIAL_DEEP_SLEEP_DELAY)
     global set_on_cold_boot
     set_on_cold_boot = True
     sl.schedule_immediately(__name__, every_14_seconds, 14)

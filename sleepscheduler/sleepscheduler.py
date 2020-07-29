@@ -34,7 +34,7 @@ def schedule_on_cold_boot(function):
         _start_seconds_since_epoch = utime.time()
 
 
-def schedule_at_sec(module_name, function, seconds_since_epoch, repeat_after_sec=0):
+def schedule_epoch_sec(module_name, function, seconds_since_epoch, repeat_after_sec=0):
     """Schedule a function at seconds since Epoch.
 
     Schedule the `function` at `seconds_since_epoch` since Unix Epoch in seconds.
@@ -74,7 +74,7 @@ def schedule_immediately(module_name, function, repeat_after_sec=0):
     Returns:
         None
     """
-    schedule_at_sec(module_name, function, utime.time(), repeat_after_sec)
+    schedule_epoch_sec(module_name, function, utime.time(), repeat_after_sec)
 
 
 def schedule_next_full_minute(module_name, function, repeat_after_sec=0):
@@ -93,7 +93,7 @@ def schedule_next_full_minute(module_name, function, repeat_after_sec=0):
     epoch_time = utime.mktime(local_time)
     # increment to the next full minute
     epoch_time = epoch_time + 60
-    schedule_at_sec(module_name, function, epoch_time, repeat_after_sec)
+    schedule_epoch_sec(module_name, function, epoch_time, repeat_after_sec)
 
 
 def schedule_next_full_hour(module_name, function, repeat_after_sec=0):
@@ -112,7 +112,7 @@ def schedule_next_full_hour(module_name, function, repeat_after_sec=0):
     epoch_time = utime.mktime(local_time)
     # increment to the next full hour
     epoch_time = epoch_time + 3600
-    schedule_at_sec(module_name, function, epoch_time, repeat_after_sec)
+    schedule_epoch_sec(module_name, function, epoch_time, repeat_after_sec)
 
 
 def remove_all(module_name, function):
@@ -353,7 +353,7 @@ def _run_tasks(forever):
                 # This needs to be done before executing the task so that it can remove itself
                 # from the scheduled tasks if it wants to.
                 if first_task.repeat_after_sec != 0:
-                    schedule_at_sec(
+                    schedule_epoch_sec(
                         first_task.module_name,
                         first_task.function_name,
                         first_task.seconds_since_epoch + first_task.repeat_after_sec,
