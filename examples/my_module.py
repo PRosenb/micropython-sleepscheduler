@@ -35,11 +35,13 @@ def init_on_cold_boot():
 
     # set the time from the network
     settime()
-    print(utime.localtime())
+    print("time: {}".format(utime.localtime()))
 
     sl.schedule_next_full_minute(__name__, led_on_even_minute, 60)
-    sl.schedule_next_full_minute(__name__, raw_temperature_every_30_seconds, 30)
+    sl.schedule_next_full_minute(
+        __name__, raw_temperature_every_30_seconds, 30)
     sl.schedule_next_full_minute(__name__, hall_sensor_every_15_seconds, 15)
+    sl.schedule(__name__, print_every_day, 17, 17, 0, sl.SECONDS_PER_DAY)
 
 
 def led_on_even_minute():
@@ -79,4 +81,9 @@ def raw_temperature_every_30_seconds():
 
 def hall_sensor_every_15_seconds():
     print("hall_sensor_every_15_seconds: " + str(esp32.hall_sensor()))
+    # sl.remove_all(__name__, hall_sensor_every_15_seconds)
+
+
+def print_every_day():
+    print("print_every_day(), time: {}".format(utime.localtime()))
     # sl.remove_all(__name__, hall_sensor_every_15_seconds)

@@ -120,6 +120,32 @@ def schedule_next_full_hour(module_name, function, repeat_after_sec=0):
     schedule_epoch_sec(module_name, function, epoch_time, repeat_after_sec)
 
 
+def schedule(module_name, function, hour, minute, second, repeat_after_sec=0):
+    """Schedule a function at the given hour and optional minute and second.
+
+    Args:
+        module_name (str): Module where the function is defined
+        function (callable/str): Function to be called. Can either be a function of a string with the fuction name
+        hour(int): The hour 0-23 to schedule the function
+        minute(int): The minute 0-59 to schedule the function
+        second(int): The second 0-59 to schedule the function
+        repeat_after_sec (int): Repeat the function every given seconds afterwards
+    Returns:
+        None
+    """
+    local_time = list(utime.localtime())
+    # http://docs.micropython.org/en/latest/library/utime.html?highlight=localtime#utime.localtime
+    local_time[3] = hour
+    local_time[4] = minute
+    local_time[5] = second
+    epoch_time = utime.mktime(local_time)
+    if epoch_time < utime.time():
+        # move to next day
+        epoch_time = epoch_time + SECONDS_PER_DAY
+
+    schedule_epoch_sec(module_name, function, epoch_time, repeat_after_sec)
+
+
 def remove_all(module_name, function):
     """Removes all given functions of module `module_name`.
 
