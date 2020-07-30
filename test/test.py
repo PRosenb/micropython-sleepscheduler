@@ -17,6 +17,7 @@ def init_on_cold_boot():
     sl.schedule_immediately(__name__, "every_29_seconds", 29)
     sl.schedule_next_full_minute(__name__, next_full_minute)
     sl.schedule(__name__, at_hour_minutes_seconds, 0, 0, 17)
+    sl.schedule_delayed(__name__, delayed, 46)
     # test that a function with an exception it not scheduled anymore
     sl.schedule_immediately(__name__, function_div0, 10)
     sl.print_tasks()
@@ -54,7 +55,7 @@ def finish_test():
     sl.remove_all_by_module_name(__name__)
 
     expected = [0, 0, 0, 14, 17,
-                INITIAL_DEEP_SLEEP_DELAY, 28, 29, 42, 56, 58, 60]
+                INITIAL_DEEP_SLEEP_DELAY, 28, 29, 42, 46, 56, 58, 60]
     results = []
 
     index = 0
@@ -104,6 +105,11 @@ def next_full_minute():
 
 def at_hour_minutes_seconds():
     print("at_hour_minutes_seconds(), time: {}".format(utime.time()))
+    store_current_time()
+
+
+def delayed():
+    print("delayed(), time: {}".format(utime.time()))
     store_current_time()
 
 

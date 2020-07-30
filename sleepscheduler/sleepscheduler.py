@@ -78,6 +78,21 @@ def schedule_immediately(module_name, function, repeat_after_sec=0):
     schedule_epoch_sec(module_name, function, utime.time(), repeat_after_sec)
 
 
+def schedule_delayed(module_name, function, seconds, repeat_after_sec=0):
+    """Schedule a function in `seconds` from now.
+
+    Args:
+        module_name (str): Module where the function is defined
+        function (callable/str): Function to be called. Can either be a function of a string with the fuction name
+        seconds(int): Amount of seconds counted from now until the function is executed.
+        repeat_after_sec (int): Repeat the function every given seconds
+    Returns:
+        None
+    """
+    schedule_epoch_sec(module_name, function,
+                       utime.time() + seconds, repeat_after_sec)
+
+
 def schedule_next_full_minute(module_name, function, repeat_after_sec=0):
     """Schedule a function at the next full minute.
 
