@@ -5,9 +5,14 @@ import utime
 # -------------------------------------------------------------------------------------------------
 # Module variables
 # -------------------------------------------------------------------------------------------------
+SECONDS_PER_MINUTE = 60
+SECONDS_PER_HOUR = 3600
+SECONDS_PER_DAY = 86400
+
+
 initial_deep_sleep_delay_sec = 20
-"""Prevents deep sleep within the given amount of seconds after the CPU started from 
-hard reset. This gives the user time to press ctrl+c to stop sleepscheduler and e.g. 
+"""Prevents deep sleep within the given amount of seconds after the CPU started from
+hard reset. This gives the user time to press ctrl+c to stop sleepscheduler and e.g.
 upload new files."""
 allow_deep_sleep = True
 """Controls if deep sleep is done or not."""
@@ -92,7 +97,7 @@ def schedule_next_full_minute(module_name, function, repeat_after_sec=0):
     local_time[5] = 0  # seconds
     epoch_time = utime.mktime(local_time)
     # increment to the next full minute
-    epoch_time = epoch_time + 60
+    epoch_time = epoch_time + SECONDS_PER_MINUTE
     schedule_epoch_sec(module_name, function, epoch_time, repeat_after_sec)
 
 
@@ -111,7 +116,7 @@ def schedule_next_full_hour(module_name, function, repeat_after_sec=0):
     local_time[4] = 0  # minutes
     epoch_time = utime.mktime(local_time)
     # increment to the next full hour
-    epoch_time = epoch_time + 3600
+    epoch_time = epoch_time + SECONDS_PER_HOUR
     schedule_epoch_sec(module_name, function, epoch_time, repeat_after_sec)
 
 
