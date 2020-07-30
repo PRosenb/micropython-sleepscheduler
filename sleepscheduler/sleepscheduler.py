@@ -39,34 +39,30 @@ def schedule_on_cold_boot(function):
         _start_seconds_since_epoch = utime.time()
 
 
-def schedule_epoch_sec(module_name, function, seconds_since_epoch, repeat_after_sec=0):
-    """Schedule a function at seconds since Epoch.
-
-    Schedule the `function` at `seconds_since_epoch` since Unix Epoch in seconds.
+def schedule(module_name, function, hour, minute, second, repeat_after_sec=0):
+    """Schedule a function at the given hour and optional minute and second.
 
     Args:
         module_name (str): Module where the function is defined
         function (callable/str): Function to be called. Can either be a function of a string with the fuction name
-        seconds_since_epoch (int): Seconds since Epoch when the function is executed
-        repeat_after_sec (int): Repeat the function every given seconds
+        hour(int): The hour 0-23 to schedule the function
+        minute(int): The minute 0-59 to schedule the function
+        second(int): The second 0-59 to schedule the function
+        repeat_after_sec (int): Repeat the function every given seconds afterwards
     Returns:
         None
     """
-    if callable(function):
-        function_name = function.__name__
-    else:
-        function_name = function
-    new_task = Task(module_name, function_name,
-                    seconds_since_epoch, repeat_after_sec)
-    inserted = False
-    for i in range(len(_tasks)):
-        task = _tasks[i]
-        if (task.seconds_since_epoch > seconds_since_epoch):
-            _tasks.insert(i, new_task)
-            inserted = True
-            break
-    if not inserted:
-        _tasks.append(new_task)
+    local_time = list(utime.localtime())
+    # http://docs.micropython.org/en/latest/library/utime.html?highlight=localtime#utime.localtime
+    local_time[3] = hour
+    local_time[4] = minute
+    local_time[5] = second
+    epoch_time = utime.mktime(local_time)
+    if epoch_time < utime.time():
+        # move to next day
+        epoch_time = epoch_time + SECONDS_PER_DAY
+
+    schedule_epoch_sec(module_name, function, epoch_time, repeat_after_sec)
 
 
 def schedule_immediately(module_name, function, repeat_after_sec=0):
@@ -120,30 +116,34 @@ def schedule_next_full_hour(module_name, function, repeat_after_sec=0):
     schedule_epoch_sec(module_name, function, epoch_time, repeat_after_sec)
 
 
-def schedule(module_name, function, hour, minute, second, repeat_after_sec=0):
-    """Schedule a function at the given hour and optional minute and second.
+def schedule_epoch_sec(module_name, function, seconds_since_epoch, repeat_after_sec=0):
+    """Schedule a function at seconds since Epoch.
+
+    Schedule the `function` at `seconds_since_epoch` since Unix Epoch in seconds.
 
     Args:
         module_name (str): Module where the function is defined
         function (callable/str): Function to be called. Can either be a function of a string with the fuction name
-        hour(int): The hour 0-23 to schedule the function
-        minute(int): The minute 0-59 to schedule the function
-        second(int): The second 0-59 to schedule the function
-        repeat_after_sec (int): Repeat the function every given seconds afterwards
+        seconds_since_epoch (int): Seconds since Epoch when the function is executed
+        repeat_after_sec (int): Repeat the function every given seconds
     Returns:
         None
     """
-    local_time = list(utime.localtime())
-    # http://docs.micropython.org/en/latest/library/utime.html?highlight=localtime#utime.localtime
-    local_time[3] = hour
-    local_time[4] = minute
-    local_time[5] = second
-    epoch_time = utime.mktime(local_time)
-    if epoch_time < utime.time():
-        # move to next day
-        epoch_time = epoch_time + SECONDS_PER_DAY
-
-    schedule_epoch_sec(module_name, function, epoch_time, repeat_after_sec)
+    if callable(function):
+        function_name = function.__name__
+    else:
+        function_name = function
+    new_task = Task(module_name, function_name,
+                    seconds_since_epoch, repeat_after_sec)
+    inserted = False
+    for i in range(len(_tasks)):
+        task = _tasks[i]
+        if (task.seconds_since_epoch > seconds_since_epoch):
+            _tasks.insert(i, new_task)
+            inserted = True
+            break
+    if not inserted:
+        _tasks.append(new_task)
 
 
 def remove_all(module_name, function):
