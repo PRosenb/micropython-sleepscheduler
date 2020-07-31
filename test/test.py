@@ -7,21 +7,36 @@ set_on_cold_boot = False
 
 
 def init_on_cold_boot():
-    sl.schedule_epoch_sec(__name__, finish_test, utime.time() + 61)
-    sl.schedule_epoch_sec(__name__, check_no_deep_sleep,
-                          utime.time() + INITIAL_DEEP_SLEEP_DELAY)
-    sl.schedule_delayed(__name__, check_deep_sleep, 49)
-    global set_on_cold_boot
-    set_on_cold_boot = True
-    sl.schedule_immediately(__name__, every_14_seconds, 14)
-    # also test schedule_immediately() with function_name
-    sl.schedule_immediately(__name__, "every_29_seconds", 29)
-    sl.schedule_next_full_minute(__name__, next_full_minute)
-    sl.schedule(__name__, at_hour_minutes_seconds, 0, 0, 17)
-    sl.schedule_delayed(__name__, delayed, 46)
     # test that a function with an exception it not scheduled anymore
     sl.schedule_immediately(__name__, function_div0, 10)
+
+    global set_on_cold_boot
+    set_on_cold_boot = True
+    sl.schedule_delayed(__name__, check_no_deep_sleep,
+                        INITIAL_DEEP_SLEEP_DELAY)
+    # also test with function_name
+    sl.schedule_delayed(__name__, "check_deep_sleep", 49)
+
+    sl.schedule_immediately(__name__, every_14_seconds, 14)
+    # also test with function_name
+    sl.schedule_immediately(__name__, "every_29_seconds", 29)
+
+    sl.schedule_next_full_minute(__name__, next_full_minute)
+    # also test with function_name, will execute within the same second
+    sl.schedule_next_full_minute(__name__, "next_full_minute")
+
+    sl.schedule(__name__, at_hour_minutes_seconds, 0, 0, 17)
+    sl.schedule(__name__, "at_hour_minutes_seconds_function_name", 0, 0, 18)
+
     sl.print_tasks()
+
+    # finish and evaluate test in the end
+    sl.schedule_delayed(__name__, finish_test, 61)
+
+
+def function_div0():
+    store_current_time()
+    return 1/0
 
 
 def check_no_deep_sleep():
@@ -43,9 +58,29 @@ def check_deep_sleep():
         print("TEST_ERROR Deep sleep not done")
 
 
-def function_div0():
+def every_14_seconds():
+    print("every_14_seconds(), time: {}".format(utime.time()))
     store_current_time()
-    return 1/0
+
+
+def every_29_seconds():
+    print("every_29_seconds(), time: {}".format(utime.time()))
+    store_current_time()
+
+
+def next_full_minute():
+    print("next_full_minute(), time: {}".format(utime.time()))
+    store_current_time()
+
+
+def at_hour_minutes_seconds():
+    print("at_hour_minutes_seconds(), time: {}".format(utime.time()))
+    store_current_time()
+
+
+def at_hour_minutes_seconds_function_name():
+    print("at_hour_minutes_seconds(), time: {}".format(utime.time()))
+    store_current_time()
 
 
 def finish_test():
@@ -64,8 +99,8 @@ def finish_test():
     sl.schedule_immediately(__name__, every_14_seconds, 14)
     sl.remove_all_by_module_name(__name__)
 
-    expected = [0, 0, 0, 14, 17,
-                INITIAL_DEEP_SLEEP_DELAY, 28, 29, 42, 46, 49, 56, 58, 60]
+    expected = [0, 0, 0, 14, 17, 18,
+                INITIAL_DEEP_SLEEP_DELAY, 28, 29, 42, 49, 56, 58, 60, 60]
     results = []
 
     index = 0
@@ -96,31 +131,6 @@ def finish_test():
 
     if not failure:
         print("TEST_SUCCESS")
-
-
-def every_14_seconds():
-    print("every_14_seconds(), time: {}".format(utime.time()))
-    store_current_time()
-
-
-def every_29_seconds():
-    print("every_29_seconds(), time: {}".format(utime.time()))
-    store_current_time()
-
-
-def next_full_minute():
-    print("next_full_minute(), time: {}".format(utime.time()))
-    store_current_time()
-
-
-def at_hour_minutes_seconds():
-    print("at_hour_minutes_seconds(), time: {}".format(utime.time()))
-    store_current_time()
-
-
-def delayed():
-    print("delayed(), time: {}".format(utime.time()))
-    store_current_time()
 
 
 def store_current_time():
