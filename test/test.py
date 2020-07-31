@@ -10,6 +10,7 @@ def init_on_cold_boot():
     sl.schedule_epoch_sec(__name__, finish_test, utime.time() + 61)
     sl.schedule_epoch_sec(__name__, check_no_deep_sleep,
                           utime.time() + INITIAL_DEEP_SLEEP_DELAY)
+    sl.schedule_delayed(__name__, check_deep_sleep, 49)
     global set_on_cold_boot
     set_on_cold_boot = True
     sl.schedule_immediately(__name__, every_14_seconds, 14)
@@ -31,6 +32,15 @@ def check_no_deep_sleep():
         sl.remove_all_by_module_name(__name__)
         print("TEST_ERROR Deep sleep done within first '{}' seconds".format(
             INITIAL_DEEP_SLEEP_DELAY))
+
+
+def check_deep_sleep():
+    print("check_deep_sleep(), time: {}".format(utime.time()))
+    if not set_on_cold_boot:
+        store_current_time()
+    else:
+        sl.remove_all_by_module_name(__name__)
+        print("TEST_ERROR Deep sleep not done")
 
 
 def function_div0():
@@ -55,7 +65,7 @@ def finish_test():
     sl.remove_all_by_module_name(__name__)
 
     expected = [0, 0, 0, 14, 17,
-                INITIAL_DEEP_SLEEP_DELAY, 28, 29, 42, 46, 56, 58, 60]
+                INITIAL_DEEP_SLEEP_DELAY, 28, 29, 42, 46, 49, 56, 58, 60]
     results = []
 
     index = 0
