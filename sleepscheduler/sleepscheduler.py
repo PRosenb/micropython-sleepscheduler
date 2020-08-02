@@ -9,6 +9,9 @@ SECONDS_PER_MINUTE = 60
 SECONDS_PER_HOUR = 3600
 SECONDS_PER_DAY = 86400
 
+DEEP_SLEEP_WAKEUP_DELAY_SEC = 2
+"""Time in seconds to wake up from deep sleep before the next task is due to account for
+the time to start up from deep sleep."""
 
 initial_deep_sleep_delay_sec = 20
 """Prevents deep sleep within the given amount of seconds after the CPU started from
@@ -411,29 +414,34 @@ def _run_tasks(forever):
                     remove_all(first_task.module_name,
                                first_task.function_name)
             else:
-                # - 1 below is to wake up one second before the task executes
-                if allow_deep_sleep and time_until_first_task > 1:
+                # Wake up from light sleep 1 sec before the next task executes
+                # to allow sleeping milliseconds in order to execute the task on time.
+                WAKE_UP_SEC_BEFORE_TASK_EXECUTES = 1
+                if allow_deep_sleep and time_until_first_task > DEEP_SLEEP_WAKEUP_DELAY_SEC:
                     if (not machine.wake_reason() == machine.DEEPSLEEP_RESET
                             and utime.time() < _start_seconds_since_epoch + initial_deep_sleep_delay_sec):
                         # initial deep sleep delay
                         remaining_no_deep_sleep_sec = (
                             _start_seconds_since_epoch + initial_deep_sleep_delay_sec) - utime.time()
-                        if (time_until_first_task - 1 > remaining_no_deep_sleep_sec):
+                        if (time_until_first_task - WAKE_UP_SEC_BEFORE_TASK_EXECUTES > remaining_no_deep_sleep_sec):
                             # deep sleep prevention on cold boot
                             print("sleepscheduler: sleep({}) due to cold boot".format(
                                 remaining_no_deep_sleep_sec))
                             utime.sleep(remaining_no_deep_sleep_sec)
                         else:
                             print("sleepscheduler: sleep({}) due to cold boot".format(
-                                time_until_first_task - 1))
-                            utime.sleep(time_until_first_task - 1)
+                                time_until_first_task - WAKE_UP_SEC_BEFORE_TASK_EXECUTES))
+                            utime.sleep(time_until_first_task -
+                                        WAKE_UP_SEC_BEFORE_TASK_EXECUTES)
                     else:
-                        _deep_sleep_sec(time_until_first_task - 1)
+                        _deep_sleep_sec(time_until_first_task -
+                                        DEEP_SLEEP_WAKEUP_DELAY_SEC)
                 else:
-                    if time_until_first_task > 1:
+                    if time_until_first_task > WAKE_UP_SEC_BEFORE_TASK_EXECUTES:
                         print("sleepscheduler: sleep({})".format(
-                            time_until_first_task - 1))
-                        utime.sleep(time_until_first_task - 1)
+                            time_until_first_task - WAKE_UP_SEC_BEFORE_TASK_EXECUTES))
+                        utime.sleep(time_until_first_task -
+                                    WAKE_UP_SEC_BEFORE_TASK_EXECUTES)
                     else:
                         # wait in ms to execute the task when the next second starts
                         first_task_seconds_since_epoch = first_task.seconds_since_epoch
@@ -442,10 +450,10 @@ def _run_tasks(forever):
         else:
             if forever:
                 if (not machine.wake_reason() == machine.DEEPSLEEP_RESET
-                            and utime.time() < _start_seconds_since_epoch + initial_deep_sleep_delay_sec):
+                        and utime.time() < _start_seconds_since_epoch + initial_deep_sleep_delay_sec):
                     # initial deep sleep delay
                     remaining_no_deep_sleep_sec = (
-                            _start_seconds_since_epoch + initial_deep_sleep_delay_sec) - utime.time()
+                        _start_seconds_since_epoch + initial_deep_sleep_delay_sec) - utime.time()
                     # deep sleep prevention on cold boot
                     print("sleepscheduler: sleep({}) due to cold boot".format(
                         remaining_no_deep_sleep_sec))
