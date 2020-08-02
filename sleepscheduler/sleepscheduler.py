@@ -12,7 +12,7 @@ SECONDS_PER_DAY = 86400
 
 initial_deep_sleep_delay_sec = 20
 """Prevents deep sleep within the given amount of seconds after the CPU started from
-hard reset. This gives the user time to press ctrl+c to stop sleepscheduler and e.g.
+hard reset. This gives the user time to press ctrl+t followed by ctrl+c to stop sleepscheduler and e.g.
 upload new files."""
 allow_deep_sleep = True
 """Controls if deep sleep is done or not."""
@@ -441,10 +441,21 @@ def _run_tasks(forever):
                             utime.sleep_ms(1)
         else:
             if forever:
-                # deep sleep until an external interrupt occurs (if configured)
-                _store()
-                print("sleepscheduler: Deep sleep infinitely")
-                machine.deepsleep()
+                if (not machine.wake_reason() == machine.DEEPSLEEP_RESET
+                            and utime.time() < _start_seconds_since_epoch + initial_deep_sleep_delay_sec):
+                    # initial deep sleep delay
+                    remaining_no_deep_sleep_sec = (
+                            _start_seconds_since_epoch + initial_deep_sleep_delay_sec) - utime.time()
+                    # deep sleep prevention on cold boot
+                    print("sleepscheduler: sleep({}) due to cold boot".format(
+                        remaining_no_deep_sleep_sec))
+                    utime.sleep(remaining_no_deep_sleep_sec)
+                else:
+                    # deep sleep until an external interrupt occurs (if configured)
+                    _store()
+                    print("sleepscheduler: Deep sleep infinitely")
+                    # TODO delay if within first 20 seconds
+                    machine.deepsleep()
             else:
                 print("sleepscheduler: All tasks finished, exiting sleepscheduler.")
                 break
